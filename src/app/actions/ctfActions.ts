@@ -80,7 +80,7 @@ export async function verifyAndSubmitFlag(idToken: string, ctfId: string, challe
       }
     }
 
-    if (actualFlag !== submittedFlag) {
+    if (!actualFlag || actualFlag.trim().toLowerCase() !== submittedFlag.trim().toLowerCase()) {
       return { success: false, message: 'Invalid flag. Try again!' };
     }
 
