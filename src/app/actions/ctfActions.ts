@@ -26,13 +26,13 @@ export async function getSafeChallenges(idToken: string, ctfId: string) {
       const data = doc.data();
       return {
         id: doc.id,
-        level_no: data.levelId !== undefined ? Number(data.levelId) : (data.level_no !== undefined ? Number(data.level_no) : 0),
-        question: data.clue !== undefined ? data.clue : (data.question || ''),
+        levelId: data.levelId !== undefined ? Number(data.levelId) : (data.level_no !== undefined ? Number(data.level_no) : 0),
+        clue: data.clue !== undefined ? data.clue : (data.question || ''),
         points: data.points !== undefined ? Number(data.points) : 0,
         title: data.title || '',
         formatGuide: data.formatGuide || ''
       };
-    }).sort((a, b) => a.level_no - b.level_no); // Level එක අනුව පිළිවෙලට සැකසීම
+    }).sort((a, b) => a.levelId - b.levelId); // Level එක අනුව පිළිවෙලට සැකසීම
 
     return { success: true, data: challenges };
   } catch (error) {

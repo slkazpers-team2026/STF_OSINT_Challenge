@@ -11,8 +11,8 @@ interface AddChallengeModalProps {
   onSuccess: () => void;
   challengeToEdit?: {
     id: string;
-    level_no: number;
-    question: string;
+    levelId: number;
+    clue: string;
     points: number;
     title: string;
     formatGuide: string;
@@ -51,10 +51,10 @@ export default function AddChallengeModal({ isOpen, onClose, ctfId, onSuccess, c
   useEffect(() => {
     if (isOpen) {
       if (challengeToEdit) {
-        setLevelId(String(challengeToEdit.level_no || ''));
+        setLevelId(String(challengeToEdit.levelId || ''));
         setPoints(String(challengeToEdit.points || ''));
         setTitle(challengeToEdit.title || '');
-        setClue(challengeToEdit.question || '');
+        setClue(challengeToEdit.clue || '');
         setFlag(''); // Edit වලදී flag එක blank තබයි (keep current value)
         setFormatGuide(challengeToEdit.formatGuide || '');
       } else {

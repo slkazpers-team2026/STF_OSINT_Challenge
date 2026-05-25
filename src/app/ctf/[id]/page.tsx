@@ -12,8 +12,8 @@ import AddChallengeModal from '@/components/AddChallengeModal';
 // Type definitions
 interface Challenge {
   id: string;
-  level_no: number;
-  question: string;
+  levelId: number;
+  clue: string;
   points: number;
   title: string;
   formatGuide: string;
@@ -209,7 +209,7 @@ export default function CTFDetailPage({ params }: { params: { id: string } }) {
               <div className="mb-4">
                 <div className="flex items-center gap-3">
                   <h3 className="text-lg font-bold text-cyan-400 uppercase tracking-wide">
-                    Level {challenge.level_no}
+                    Level {challenge.levelId}
                   </h3>
                   <span className="bg-cyan-950/30 text-cyan-500 text-[10px] font-bold px-2 py-0.5 rounded border border-cyan-900">
                     {challenge.points} PTS
@@ -223,9 +223,9 @@ export default function CTFDetailPage({ params }: { params: { id: string } }) {
               </div>
               
               {/* Question/Briefing (Optional rendering) */}
-              {challenge.question && (
+              {challenge.clue && (
                 <p className="text-gray-300 text-sm leading-relaxed mb-6 font-sans">
-                  {challenge.question}
+                  {challenge.clue}
                 </p>
               )}
               
