@@ -338,7 +338,7 @@ export default function AdminClient() {
                   ))}
                   {usersList.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="py-8 text-center text-gray-500 italic">No agents registered in database.</td>
+                      <td colSpan={5} className="py-8 text-center text-gray-500 italic">No users found in the database.</td>
                     </tr>
                   )}
                 </tbody>

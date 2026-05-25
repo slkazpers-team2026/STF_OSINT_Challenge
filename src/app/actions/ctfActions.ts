@@ -11,15 +11,20 @@ export async function getSafeChallenges(idToken: string, ctfId: string) {
       decodedToken = await adminAuth.verifyIdToken(idToken);
     } catch (authError) {
       console.error("Auth error in getSafeChallenges:", authError);
-      return { success: false, data: [], message: 'Unauthorized: Invalid session.' };
+      return { success: false, data: [], solvedChallengeIds: [], message: 'Unauthorized: Invalid session.' };
     }
 
     if (!decodedToken) {
-      return { success: false, data: [], message: 'Unauthorized.' };
+      return { success: false, data: [], solvedChallengeIds: [], message: 'Unauthorized.' };
     }
 
+    const userId = decodedToken.uid;
     const snapshot = await adminDb.collection('challenges').where('ctf_id', '==', ctfId).get();
     
+    const submissionRef = adminDb.collection('submissions').doc(`${userId}_${ctfId}`);
+    const submissionSnap = await submissionRef.get();
+    const completedArr = submissionSnap.exists ? (submissionSnap.data()?.completed_challenges || []) : [];
+
     // මෙහිදී 'flag' එක ඉවත් කර (strip out) අනිත් දත්ත පමණක් යවමු
     // Legacy fields (level_no, question) සහ modern fields (levelId, clue) දෙකම support කරයි
     const challenges = snapshot.docs.map(doc => {
@@ -34,10 +39,10 @@ export async function getSafeChallenges(idToken: string, ctfId: string) {
       };
     }).sort((a, b) => a.levelId - b.levelId); // Level එක අනුව පිළිවෙලට සැකසීම
 
-    return { success: true, data: challenges };
+    return { success: true, data: challenges, solvedChallengeIds: completedArr };
   } catch (error) {
     console.error("Error fetching challenges:", error);
-    return { success: false, data: [], message: 'Failed to load challenges' };
+    return { success: false, data: [], solvedChallengeIds: [], message: 'Failed to load challenges' };
   }
 }
 
@@ -307,5 +312,81 @@ export async function updateChallenge(
   } catch (error) {
     console.error("Error updating challenge:", error);
     return { success: false, message: 'Server failed to update challenge.' };
+  }
+}
+
+// 6. Delete a CTF and all associated challenges, secrets, and submissions
+export async function deleteCtfOperation(idToken: string, ctfId: string) {
+  try {
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    const userId = decodedToken.uid;
+    const isAdmin = decodedToken.role === 'admin';
+
+    const ctfRef = adminDb.collection('ctfs').doc(ctfId);
+    const ctfSnap = await ctfRef.get();
+    
+    if (!ctfSnap.exists) {
+      return { success: false, message: 'CTF Operation not found.' };
+    }
+
+    const ctfData = ctfSnap.data();
+    if (!isAdmin && ctfData?.creator_uid !== userId) {
+      return { success: false, message: 'Unauthorized: Only the creator or an administrator can delete this operation.' };
+    }
+
+    const batch = adminDb.batch();
+    
+    // 1. Delete CTF doc
+    batch.delete(ctfRef);
+
+    // 2. Query and delete all challenges and secrets
+    const challengesSnap = await adminDb.collection('challenges').where('ctf_id', '==', ctfId).get();
+    for (const challengeDoc of challengesSnap.docs) {
+      batch.delete(challengeDoc.ref);
+      batch.delete(challengeDoc.ref.collection('secrets').doc('data'));
+    }
+
+    // 3. Query and delete all submissions
+    const submissionsSnap = await adminDb.collection('submissions').where('ctf_id', '==', ctfId).get();
+    for (const submissionDoc of submissionsSnap.docs) {
+      batch.delete(submissionDoc.ref);
+    }
+
+    await batch.commit();
+    return { success: true, message: 'CTF operation and all associated objectives successfully erased.' };
+  } catch (error: any) {
+    console.error("Error in deleteCtfOperation action:", error);
+    return { success: false, message: error.message || 'Failed to delete CTF operation.' };
+  }
+}
+
+// 7. Update CTF title and description
+export async function updateCtfOperation(idToken: string, ctfId: string, title: string, description: string) {
+  try {
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    const userId = decodedToken.uid;
+    const isAdmin = decodedToken.role === 'admin';
+
+    const ctfRef = adminDb.collection('ctfs').doc(ctfId);
+    const ctfSnap = await ctfRef.get();
+    
+    if (!ctfSnap.exists) {
+      return { success: false, message: 'CTF Operation not found.' };
+    }
+
+    const ctfData = ctfSnap.data();
+    if (!isAdmin && ctfData?.creator_uid !== userId) {
+      return { success: false, message: 'Unauthorized: Only the creator or an administrator can update this operation.' };
+    }
+
+    await ctfRef.update({
+      title: title.trim(),
+      description: description.trim()
+    });
+
+    return { success: true, message: 'CTF operation briefing successfully updated.' };
+  } catch (error: any) {
+    console.error("Error in updateCtfOperation action:", error);
+    return { success: false, message: error.message || 'Failed to update CTF operation.' };
   }
 }

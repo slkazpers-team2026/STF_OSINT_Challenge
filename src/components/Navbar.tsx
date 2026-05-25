@@ -30,6 +30,11 @@ export default function Navbar() {
             <Link href="/leaderboard" className="text-gray-300 hover:text-white transition-colors text-sm font-medium">
               Global Leaderboard
             </Link>
+            {userData?.role === 'admin' && (
+              <Link href="/admin/users" className="text-gray-300 hover:text-white transition-colors text-sm font-medium">
+                Users
+              </Link>
+            )}
           </div>
           
           <div className="flex items-center gap-4">

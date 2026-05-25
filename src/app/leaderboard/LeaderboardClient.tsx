@@ -8,6 +8,7 @@ interface GlobalPlayer {
   uid: string;
   displayName: string;
   global_score: number;
+  role?: string;
 }
 
 export default function LeaderboardClient() {
@@ -20,16 +21,21 @@ export default function LeaderboardClient() {
         const q = query(
           collection(db, 'users'),
           orderBy('global_score', 'desc'),
-          limit(50)
+          limit(100)
         );
         const snapshot = await getDocs(q);
         
-        const data = snapshot.docs.map(doc => ({
+        const allUsers = snapshot.docs.map(doc => ({
           uid: doc.id,
           ...doc.data()
         })) as GlobalPlayer[];
         
-        setPlayers(data);
+        // Filter out admins and slice to top 50
+        const playersOnly = allUsers
+          .filter(player => player.role !== 'admin')
+          .slice(0, 50);
+        
+        setPlayers(playersOnly);
       } catch (error) {
         console.error("Error fetching global leaderboard:", error);
       } finally {
