@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // පරිශීලකයා ලොග් වී ඇත්දැයි පරීක්ෂා කිරීම
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // පරිශීලකයා Admin කෙනෙකු දැයි පරීක්ෂා කිරීම
+    function isAdmin() {
+      return isAuth() && request.auth.token.role == 'admin';
+    }
+
+    // 1. Users Collection
+    match /users/{userId} {
+      // ඕනෑම කෙනෙකුට Leaderboard එක සඳහා කියවිය හැක
+      allow read: if isAuth();
+      // අලුත් user කෙනෙක් හදද්දී default values (role='user', global_score=0) සහිතව සෑදීමට ඉඩ දේ
+      allow create: if isAuth() && request.auth.uid == userId && 
+        request.resource.data.role == 'user' && 
+        request.resource.data.global_score == 0;
+      // Update කළ හැක්කේ Admin කෙනෙකුට හෝ අදාළ පරිශීලකයාට පමණි (හැබැයි role/global_score වෙනස් කළ නොහැක)
+      allow update: if isAdmin() || (
+        isAuth() && request.auth.uid == userId && 
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'global_score'])
+      );
+      // Delete කිරීම Admin කෙනෙකුට පමණක් සීමා වේ
+      allow delete: if isAdmin();
+    }
+
+    // 2. CTFs Collection
+    match /ctfs/{ctfId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && request.resource.data.creator_uid == request.auth.uid;
+      allow update, delete: if isAdmin() || (isAuth() && resource.data.creator_uid == request.auth.uid);
+    }
+
+    // 3. Challenges Collection
+    match /challenges/{challengeId} {
+      // වැදගත්: Admin ලාට සහ Creators ලාට පමණක් Client-side එකෙන් මෙය කියවීමට (read) ඉඩ දෙන්න.
+      // සාමාන්‍ය ක්‍රීඩකයින්ට මෙය කියවීමට ඉඩ දුන්නොත් ඔවුන්ට 'flag' එක දැකගත හැක!
+      allow read: if isAdmin() || (isAuth() && get(/databases/$(database)/documents/ctfs/$(resource.data.ctf_id)).data.creator_uid == request.auth.uid);
+      
+      allow create: if isAdmin() || (isAuth() && get(/databases/$(database)/documents/ctfs/$(request.resource.data.ctf_id)).data.creator_uid == request.auth.uid);
+      allow update, delete: if isAdmin() || (isAuth() && get(/databases/$(database)/documents/ctfs/$(resource.data.ctf_id)).data.creator_uid == request.auth.uid);
+    }
+
+    // 4. Submissions Collection
+    match /submissions/{submissionId} {
+      // ක්‍රීඩකයින්ට තම ලකුණු බලාගත හැක
+      allow read: if isAuth();
+      // Frontend එකෙන් ලකුණු update කිරීම සම්පූර්ණයෙන්ම තහනම්. Admin SDK (Server Actions) හරහා පමණක් සිදු විය යුතුයි.
+      allow write: if false; 
+    }
+  }
+}
