@@ -26,37 +26,22 @@ export async function getAllUsers(idToken: string) {
 
   try {
     const usersSnap = await adminDb.collection('users').get();
-    const profilesSnap = await adminDb.collection('public_profiles').get();
 
-    console.log(`[getAllUsers] Successfully retrieved data. Users count: ${usersSnap.size}, Public profiles count: ${profilesSnap.size}`);
-
-    // Map public profiles by UID
-    const profilesMap = new Map();
-    profilesSnap.docs.forEach(doc => {
-      profilesMap.set(doc.id, doc.data());
-    });
+    console.log(`[getAllUsers] Successfully retrieved data. Users count: ${usersSnap.size}`);
 
     // Merge private account details with public profiling details
     const mergedUsers = usersSnap.docs.map(doc => {
       const userData = doc.data();
-      const profileData = profilesMap.get(doc.id) || {};
       
-      // Ensure createdAt is serializable (Firestore Timestamps cannot cross Server Action boundaries)
-      let createdAtStr = null;
-      if (userData.createdAt) {
-        createdAtStr = typeof userData.createdAt.toDate === 'function'
-          ? userData.createdAt.toDate().toISOString()
-          : new Date(userData.createdAt).toISOString();
-      }
-
       return {
         uid: doc.id,
         email: userData.email || 'N/A',
         role: userData.role || 'user',
-        createdAt: createdAtStr,
-        displayName: profileData.displayName || 'Unknown Agent',
-        currentLevel: profileData.currentLevel || 1,
-        totalPoints: profileData.totalPoints !== undefined ? profileData.totalPoints : (userData.global_score || 0),
+        createdAt: userData.createdAt ? (userData.createdAt.toDate ? userData.createdAt.toDate().toISOString() : userData.createdAt) : null,
+        displayName: userData.displayName || 'Anonymous',
+        currentLevel: userData.currentLevel !== undefined ? Number(userData.currentLevel) : 1,
+        global_score: userData.global_score !== undefined ? Number(userData.global_score) : 0,
+        totalPoints: userData.global_score !== undefined ? Number(userData.global_score) : 0,
       };
     });
 
@@ -349,3 +334,43 @@ export async function updateUserChallengeScore(
     return { success: false, message: error.message || 'Failed to update challenge score.' };
   }
 }
+
+/**
+ * Diagnostic Action: Fetches a single user document and its public profile directly and logs details.
+ */
+export async function debugFetchOneUser(idToken: string, targetUid: string) {
+  try {
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    if (decodedToken.role !== 'admin') {
+      return { success: false, message: 'Unauthorized: Admin access required.' };
+    }
+
+    const userDocRef = adminDb.collection('users').doc(targetUid);
+    const userDocSnap = await userDocRef.get();
+    const profileDocRef = adminDb.collection('public_profiles').doc(targetUid);
+    const profileDocSnap = await profileDocRef.get();
+
+    console.log(`--- [DEBUG DATA PIPELINE FOR UID: ${targetUid}] ---`);
+    console.log(`User Document Exists: ${userDocSnap.exists}`);
+    if (userDocSnap.exists) {
+      console.log(`User Raw Data:`, JSON.stringify(userDocSnap.data()));
+    }
+    console.log(`Profile Document Exists: ${profileDocSnap.exists}`);
+    if (profileDocSnap.exists) {
+      console.log(`Profile Raw Data:`, JSON.stringify(profileDocSnap.data()));
+    }
+    console.log(`-------------------------------------------------`);
+
+    return {
+      success: true,
+      existsInUsers: userDocSnap.exists,
+      userRawData: userDocSnap.exists ? userDocSnap.data() : null,
+      existsInProfiles: profileDocSnap.exists,
+      profileRawData: profileDocSnap.exists ? profileDocSnap.data() : null
+    };
+  } catch (error: any) {
+    console.error("[DEBUG SERVER ACTION ERROR]:", error);
+    return { success: false, message: error.message || 'Error occurred.' };
+  }
+}
+

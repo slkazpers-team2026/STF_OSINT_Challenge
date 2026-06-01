@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 
 interface CTFSubmission {
   user_id: string;
   total_score: number;
   displayName?: string;
+  role?: string;
 }
 
 export default function CTFLeaderboardPage({ params }: { params: { id: string } }) {
@@ -26,15 +27,33 @@ export default function CTFLeaderboardPage({ params }: { params: { id: string } 
         );
         const snapshot = await getDocs(q);
         
-        const subsData = snapshot.docs.map(doc => {
-          const data = doc.data() as CTFSubmission;
-          return {
-            ...data,
-            displayName: data.displayName || 'Unknown Agent'
-          };
-        });
+        const subsData = await Promise.all(
+          snapshot.docs.map(async (docSnap) => {
+            const data = docSnap.data() as CTFSubmission;
+            
+            // User ලේඛනයෙන් role එක කියවීම
+            let role = 'user';
+            try {
+              const userDocRef = doc(db, 'users', data.user_id);
+              const userDocSnap = await getDoc(userDocRef);
+              if (userDocSnap.exists()) {
+                role = userDocSnap.data()?.role || 'user';
+              }
+            } catch (err) {
+              console.error(`Error fetching role for user ${data.user_id}:`, err);
+            }
 
-        setSubmissions(subsData);
+            return {
+              ...data,
+              role,
+              displayName: data.displayName || 'Unknown Agent'
+            };
+          })
+        );
+
+        // Admin පරිශීලකයින් ඉවත් කිරීම
+        const filteredSubs = subsData.filter(sub => sub.role !== 'admin');
+        setSubmissions(filteredSubs);
       } catch (error) {
         console.error("Error fetching CTF leaderboard:", error);
       } finally {

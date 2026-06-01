@@ -13,6 +13,7 @@ interface ManagedUser {
   displayName: string;
   currentLevel: number;
   totalPoints: number;
+  global_score?: number;
 }
 
 interface ManagedCTF {
@@ -304,7 +305,7 @@ export default function AdminClient() {
                         </span>
                       </td>
                       <td className="py-4 px-6 text-center text-blue-400 font-bold font-mono">
-                        {managedUser.totalPoints} PTS
+                        {managedUser.global_score !== undefined ? managedUser.global_score : managedUser.totalPoints} PTS
                       </td>
                       <td className="py-4 px-6 text-xs text-gray-400">
                         {managedUser.createdAt ? new Date(managedUser.createdAt).toLocaleDateString() : 'N/A'}

@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useState, useCallback } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
@@ -11,7 +11,8 @@ import {
   verifyAndSubmitFlag, 
   deleteChallenge, 
   deleteCtfOperation, 
-  updateCtfOperation 
+  updateCtfOperation,
+  resetEntireOperationProgress
 } from '@/app/actions/ctfActions';
 import AddChallengeModal from '@/components/AddChallengeModal';
 import { useRouter } from 'next/navigation';
@@ -46,6 +47,15 @@ export default function CTFDetailPage({ params }: { params: { id: string } }) {
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
 
+  // Cyberpunk flag decryption states
+  const [showDecryptModal, setShowDecryptModal] = useState(false);
+  const [countdown, setCountdown] = useState(5);
+  const [decryptionStatus, setDecryptionStatus] = useState<'processing' | 'success' | 'failed' | null>(null);
+  const [submissionResult, setSubmissionResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [activeChallengeId, setActiveChallengeId] = useState<string | null>(null);
+  const [showFinalClearModal, setShowFinalClearModal] = useState(false);
+  const [isResettingEntire, setIsResettingEntire] = useState(false);
+
   // Challenges list query re-extracted for fetch triggers
   const fetchChallenges = useCallback(async () => {
     if (!user) return;
@@ -60,6 +70,85 @@ export default function CTFDetailPage({ params }: { params: { id: string } }) {
       console.error("Error loading objectives:", error);
     }
   }, [ctfId, user]);
+
+  // 1. Countdown timer effect: tick down every 1 second
+  useEffect(() => {
+    if (!showDecryptModal || countdown <= 0) return;
+
+    const intervalId = setInterval(() => {
+      setCountdown((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [showDecryptModal, countdown]);
+
+  // 2. Synchronize decryption status change when countdown hits 0
+  useEffect(() => {
+    if (showDecryptModal && countdown === 0) {
+      if (submissionResult) {
+        if (submissionResult.success) {
+          const isFinalChallenge = activeChallengeId === challenges[challenges.length - 1]?.id;
+          if (isFinalChallenge) {
+            // Close loading modal and show the celebration modal
+            setShowDecryptModal(false);
+            setShowFinalClearModal(true);
+
+            // Execute completion logic immediately
+            if (activeChallengeId) {
+              setMessages((prev) => ({
+                ...prev,
+                [activeChallengeId]: { text: submissionResult.message, isError: false }
+              }));
+              setFlagInputs((prev) => ({
+                ...prev,
+                [activeChallengeId]: ''
+              }));
+              fetchChallenges();
+            }
+
+            // Reset decryption state
+            setDecryptionStatus(null);
+            setSubmissionResult(null);
+            setActiveChallengeId(null);
+          } else {
+            setDecryptionStatus('success');
+          }
+        } else {
+          setDecryptionStatus('failed');
+        }
+      }
+    }
+  }, [countdown, submissionResult, showDecryptModal, activeChallengeId, challenges, fetchChallenges]);
+
+  // 3. Auto-dismiss after 2 seconds once decryption is 'success' or 'failed'
+  useEffect(() => {
+    if (decryptionStatus === 'success' || decryptionStatus === 'failed') {
+      const dismissTimer = setTimeout(async () => {
+        setShowDecryptModal(false);
+
+        if (activeChallengeId && submissionResult) {
+          setMessages((prev) => ({
+            ...prev,
+            [activeChallengeId]: { text: submissionResult.message, isError: !submissionResult.success }
+          }));
+
+          if (submissionResult.success) {
+            setFlagInputs((prev) => ({
+              ...prev,
+              [activeChallengeId]: ''
+            }));
+            await fetchChallenges();
+          }
+        }
+
+        setDecryptionStatus(null);
+        setSubmissionResult(null);
+        setActiveChallengeId(null);
+      }, 2000);
+
+      return () => clearTimeout(dismissTimer);
+    }
+  }, [decryptionStatus, activeChallengeId, submissionResult, fetchChallenges]);
 
   // CTF විස්තර සහ Challenges ලබා ගැනීම
   useEffect(() => {
@@ -95,7 +184,7 @@ export default function CTFDetailPage({ params }: { params: { id: string } }) {
     }
   }, [ctfDetails]);
 
-  // Flag එක Submit කිරීමේ Function එක
+  // Flag එක Submit කිරීමේ Function එක (Cyberpunk Decryption Interception)
   const handleFlagSubmit = async (challengeId: string) => {
     if (!user) {
       alert("You must be logged in to submit a flag.");
@@ -105,26 +194,58 @@ export default function CTFDetailPage({ params }: { params: { id: string } }) {
     const flagValue = flagInputs[challengeId] || '';
     if (!flagValue.trim()) return;
 
+    // Immediately trigger UI modal state and start simulated countdown
+    setShowDecryptModal(true);
+    setCountdown(5);
+    setDecryptionStatus('processing');
+    setSubmissionResult(null);
+    setActiveChallengeId(challengeId);
+
     try {
-      // Security: Client-side එකෙන් secure ID token එකක් ලබා ගැනීම
+      // Fetch user ID Token
       const idToken = await user.getIdToken(true);
 
-      // Server Action එකට token එක සමඟ දත්ත යැවීම
-      const res = await verifyAndSubmitFlag(idToken, ctfId, challengeId, flagValue.trim());
-      
-      setMessages({
-        ...messages,
-        [challengeId]: { text: res.message, isError: !res.success }
-      });
-
-      // සාර්ථක නම් input එක හිස් කිරීම සහ challenges re-fetch කිරීම
-      if (res.success) {
-        setFlagInputs({ ...flagInputs, [challengeId]: '' });
-        await fetchChallenges();
-      }
+      // Trigger background Server Action immediately without blocking UI
+      verifyAndSubmitFlag(idToken, ctfId, challengeId, flagValue.trim())
+        .then((res) => {
+          setSubmissionResult(res);
+        })
+        .catch((error) => {
+          console.error("Flag submission background error:", error);
+          setSubmissionResult({ success: false, message: "Flag submission error occurred." });
+        });
     } catch (error) {
-      console.error("Flag submission failed:", error);
-      alert("Flag submission error occurred.");
+      console.error("Token retrieval failed:", error);
+      setSubmissionResult({ success: false, message: "Authentication failure." });
+    }
+  };
+
+  // Reset entire operation progress handler
+  const handleResetEntireOperation = async () => {
+    if (!user) {
+      alert("You must be logged in to reset progress.");
+      return;
+    }
+
+    if (!window.confirm("Are you sure you want to reset all progress for this operation? Your points will be deducted.")) {
+      return;
+    }
+
+    try {
+      setIsResettingEntire(true);
+      const idToken = await user.getIdToken();
+      const res = await resetEntireOperationProgress(idToken, ctfId);
+      if (res.success) {
+        await fetchChallenges();
+        router.refresh();
+      } else {
+        alert(res.message);
+      }
+    } catch (err) {
+      console.error("Error resetting entire operation progress:", err);
+      alert("An error occurred during operation reset.");
+    } finally {
+      setIsResettingEntire(false);
     }
   };
 
@@ -197,6 +318,30 @@ export default function CTFDetailPage({ params }: { params: { id: string } }) {
     }
   };
 
+  // Publish CTF Operation
+  const handlePublishCtf = async () => {
+    if (!user) return;
+    if (!window.confirm("Are you sure you want to PUBLISH this operation? Once published, it will be visible to all intelligence agents on the main dashboard.")) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const ctfRef = doc(db, 'ctfs', ctfId);
+      await updateDoc(ctfRef, { isPublished: true });
+      
+      // Reload details locally
+      const ctfSnap = await getDoc(ctfRef);
+      if (ctfSnap.exists()) setCtfDetails(ctfSnap.data());
+      alert("Operation successfully published to registry.");
+    } catch (error: any) {
+      console.error("Error publishing operation:", error);
+      alert("Failed to publish operation: " + (error.message || error));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Challenge edit trigger
   const handleEditClick = (challenge: Challenge) => {
     setChallengeToEdit(challenge);
@@ -224,7 +369,14 @@ export default function CTFDetailPage({ params }: { params: { id: string } }) {
       {/* Mission Briefing */}
       <div className="bg-gray-800 p-8 rounded-lg border border-gray-700 mb-8 shadow-lg">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
-          <h1 className="text-4xl font-bold text-white">{ctfDetails.title}</h1>
+          <h1 className="text-4xl font-bold text-white flex items-center gap-3">
+            {ctfDetails.title}
+            {!ctfDetails.isPublished && (
+              <span className="bg-yellow-950/30 text-yellow-500 text-xs font-bold px-2.5 py-1 rounded border border-yellow-900 font-mono">
+                DRAFT
+              </span>
+            )}
+          </h1>
           <div className="flex flex-wrap gap-2">
             <a 
               href={`/ctf/${ctfId}/leaderboard`}
@@ -232,8 +384,25 @@ export default function CTFDetailPage({ params }: { params: { id: string } }) {
             >
               View Leaderboard
             </a>
+            <button
+              onClick={handleResetEntireOperation}
+              disabled={isResettingEntire}
+              className="text-xs font-mono border border-red-500/30 text-red-400 bg-red-950/10 hover:bg-red-950/40 px-3 py-1.5 rounded transition-all disabled:opacity-50 flex items-center gap-1.5"
+              title="Reset all progress for this operation"
+            >
+              {isResettingEntire ? 'RESETTING...' : 'RESET OPERATION PROGRESS // 🔄'}
+            </button>
             {canDeploy && (
               <>
+                {!ctfDetails.isPublished && (
+                  <button
+                    onClick={handlePublishCtf}
+                    className="bg-green-950/40 hover:bg-green-900/60 text-green-400 hover:text-green-300 font-bold py-2 px-4 rounded text-sm transition-colors border border-green-800 flex items-center gap-1.5 font-mono"
+                    title="Publish this operation to the main registry"
+                  >
+                    PUBLISH_OPERATION
+                  </button>
+                )}
                 <button
                   onClick={() => setIsEditCtfOpen(true)}
                   className="bg-cyan-950/40 hover:bg-cyan-900/60 text-cyan-400 hover:text-cyan-300 font-bold py-2 px-4 rounded text-sm transition-colors border border-cyan-800 flex items-center gap-1.5 font-mono"
@@ -315,7 +484,7 @@ export default function CTFDetailPage({ params }: { params: { id: string } }) {
                 <div className="flex-grow">
                   {/* Title & Level Header */}
                   <div className="mb-4">
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
                       <h3 className="text-lg font-bold text-cyan-400 uppercase tracking-wide">
                         Level {challenge.levelId}
                       </h3>
@@ -448,6 +617,212 @@ export default function CTFDetailPage({ params }: { params: { id: string } }) {
         onSuccess={fetchChallenges}
         challengeToEdit={challengeToEdit}
       />
+
+      {/* Cyberpunk Flag Decryption Modal */}
+      {showDecryptModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+          <style dangerouslySetInnerHTML={{__html: `
+            @keyframes cyber-scan {
+              0% { top: 0%; }
+              50% { top: 100%; }
+              100% { top: 0%; }
+            }
+            .cyber-scan-bar {
+              position: absolute;
+              left: 0;
+              height: 4px;
+              width: 100%;
+              animation: cyber-scan 3s linear infinite;
+            }
+            @keyframes flash-red {
+              0%, 100% { opacity: 1; }
+              50% { opacity: 0.3; }
+            }
+            .animate-flash-red {
+              animation: flash-red 0.5s infinite;
+            }
+          `}} />
+          <div 
+            className={`relative w-full max-w-lg p-8 bg-black rounded-lg border-2 shadow-2xl z-10 font-mono text-center overflow-hidden transition-all duration-300 ${
+              decryptionStatus === 'processing' 
+                ? 'border-cyan-500 shadow-[0_0_25px_rgba(6,182,212,0.4)]' 
+                : decryptionStatus === 'success'
+                  ? 'border-green-500 shadow-[0_0_35px_rgba(34,197,94,0.5)]'
+                  : 'border-red-500 shadow-[0_0_35px_rgba(239,68,68,0.5)]'
+            }`}
+          >
+            {/* Cyber Scan Line */}
+            <div 
+              className={`cyber-scan-bar ${
+                decryptionStatus === 'processing' 
+                  ? 'bg-cyan-500/30 shadow-[0_0_10px_rgba(6,182,212,0.5)]' 
+                  : decryptionStatus === 'success'
+                    ? 'bg-green-500/30 shadow-[0_0_10px_rgba(34,197,94,0.5)]'
+                    : 'bg-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.5)]'
+              }`}
+            />
+
+            {/* Corner Bracket decorations */}
+            <div className={`absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 ${
+              decryptionStatus === 'processing' ? 'border-cyan-500' : decryptionStatus === 'success' ? 'border-green-500' : 'border-red-500'
+            }`}></div>
+            <div className={`absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 ${
+              decryptionStatus === 'processing' ? 'border-cyan-500' : decryptionStatus === 'success' ? 'border-green-500' : 'border-red-500'
+            }`}></div>
+            <div className={`absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 ${
+              decryptionStatus === 'processing' ? 'border-cyan-500' : decryptionStatus === 'success' ? 'border-green-500' : 'border-red-500'
+            }`}></div>
+            <div className={`absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 ${
+              decryptionStatus === 'processing' ? 'border-cyan-500' : decryptionStatus === 'success' ? 'border-green-500' : 'border-red-500'
+            }`}></div>
+
+            <div className="relative z-10 flex flex-col items-center justify-center min-h-[220px]">
+              {decryptionStatus === 'processing' && (
+                <>
+                  {/* Glowing spinner */}
+                  <div className="w-16 h-16 border-4 border-t-cyan-500 border-r-green-500 border-b-transparent border-l-transparent rounded-full animate-spin mb-6 shadow-[0_0_15px_rgba(6,182,212,0.4)]"></div>
+                  
+                  <h3 className="text-lg font-bold tracking-widest text-cyan-400 mb-2 uppercase animate-pulse">
+                    &gt; INTRUDING SYSTEM GATEWAY...
+                  </h3>
+                  
+                  <div className="text-sm font-semibold tracking-wider text-green-400 drop-shadow-[0_0_6px_rgba(34,197,94,0.4)]">
+                    [DECRYPTING FLAG INTERCEPTED... {countdown}s]
+                  </div>
+
+                  {/* Simulated terminal logs */}
+                  <div className="mt-6 w-full text-left bg-gray-950/80 p-3 rounded border border-cyan-950 text-[10px] text-cyan-500/70 h-20 overflow-hidden font-mono space-y-1">
+                    <p className="animate-pulse">&gt; ATTACHING PROCESS TO PORT 8443...</p>
+                    {countdown <= 4 && <p>&gt; BYPASSING FIREWALL CORRUPTING PACKETS...</p>}
+                    {countdown <= 3 && <p className="text-green-500/70">&gt; ALIGNING CRYPTO KEYSETS OVERFLOW...</p>}
+                    {countdown <= 2 && <p>&gt; DECRYPTING SHA-256 MATRIX SEGMENTS...</p>}
+                    {countdown <= 1 && <p className="text-yellow-500/70">&gt; EXECUTING BUFFER DECRYPTION OVERRIDE...</p>}
+                  </div>
+                </>
+              )}
+
+              {decryptionStatus === 'success' && (
+                <>
+                  <div className="w-16 h-16 bg-green-950/30 border-2 border-green-500 rounded-full flex items-center justify-center mb-6 shadow-[0_0_20px_rgba(34,197,94,0.4)]">
+                    <svg className="w-8 h-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  
+                  <h3 className="text-xl font-black tracking-widest text-green-400 uppercase drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]">
+                    {"// ACCESS GRANTED //"}
+                  </h3>
+                  
+                  <p className="text-sm font-bold text-green-400 mt-2 tracking-wider">
+                    SUCCESSFUL INTRUSION.
+                  </p>
+
+                  <div className="mt-4 w-full bg-green-950/40 border border-green-800 p-2 rounded text-[10px] text-green-500">
+                    {"STATUS: KEY_MATCH // RE-ROUTING TO BRIEFING"}
+                  </div>
+                </>
+              )}
+
+              {decryptionStatus === 'failed' && (
+                <>
+                  <div className="w-16 h-16 bg-red-950/30 border-2 border-red-500 rounded-full flex items-center justify-center mb-6 shadow-[0_0_20px_rgba(239,68,68,0.4)]">
+                    <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </div>
+                  
+                  <h3 className="text-xl font-black tracking-widest text-red-500 uppercase drop-shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-flash-red">
+                    {"// ACCESS DENIED //"}
+                  </h3>
+                  
+                  <p className="text-sm font-bold text-red-500 mt-2 tracking-wider">
+                    INVALID ENCRYPTION KEY.
+                  </p>
+
+                  <div className="mt-4 w-full bg-red-950/40 border border-red-900 p-2 rounded text-[10px] text-red-400">
+                    {"STATUS: HASH_MISMATCH // COLD_REBOOTING_SEGMENT"}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Grand Finale Popup UI */}
+      {showFinalClearModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl animate-fade-in">
+          <style dangerouslySetInnerHTML={{__html: `
+            @keyframes pulse-glow {
+              0%, 100% {
+                box-shadow: 0 0 20px rgba(34, 197, 94, 0.4), inset 0 0 15px rgba(34, 197, 94, 0.2);
+              }
+              50% {
+                box-shadow: 0 0 40px rgba(6, 182, 212, 0.6), inset 0 0 25px rgba(6, 182, 212, 0.3);
+              }
+            }
+            .cyber-final-modal {
+              animation: pulse-glow 4s infinite alternate;
+            }
+            @keyframes text-glitch {
+              0% { text-shadow: 2px -1px #ff00c1, -2px 1px #0ff; }
+              25% { text-shadow: -2px 1px #ff00c1, 2px -1px #0ff; }
+              50% { text-shadow: 2px 2px #ff00c1, -2px -2px #0ff; }
+              75% { text-shadow: -2px -2px #ff00c1, 2px 2px #0ff; }
+              100% { text-shadow: 2px -1px #ff00c1, -2px 1px #0ff; }
+            }
+            .cyber-glitch-final {
+              animation: text-glitch 2s infinite steps(2);
+            }
+          `}} />
+          <div className="relative w-full max-w-2xl p-10 bg-black rounded-lg border-2 border-green-500/80 cyber-final-modal text-center font-mono overflow-hidden">
+            {/* Ambient grid background */}
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(0,255,0,0.04),rgba(0,0,0,0),rgba(6,182,212,0.04))] bg-[size:100%_4px,3px_100%] pointer-events-none opacity-50"></div>
+            
+            {/* Decors */}
+            <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-green-500"></div>
+            <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-cyan-500"></div>
+            <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-cyan-500"></div>
+            <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-green-500"></div>
+
+            <div className="relative z-10 flex flex-col items-center">
+              {/* Mission Cleared Badge / Icon */}
+              <div className="w-24 h-24 bg-green-950/40 border-2 border-green-500 rounded-full flex items-center justify-center mb-8 shadow-[0_0_30px_rgba(34,197,94,0.4)] animate-bounce-subtle">
+                <svg className="w-12 h-12 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+              </div>
+
+              {/* Glowing headers */}
+              <h2 className="text-2xl md:text-3xl font-black text-green-400 uppercase tracking-widest mb-2 cyber-glitch-final drop-shadow-[0_0_10px_rgba(34,197,94,0.6)]">
+                {"[🔥 OPERATION COMPLETELY NEUTRALIZED 🔥]"}
+              </h2>
+              <div className="text-cyan-400 font-bold tracking-wider text-sm mb-6">
+                {"// STATUS: ALL OBJECTIVES CLEARED"}
+              </div>
+
+              {/* Appreciation message */}
+              <div className="bg-gray-950/90 border border-green-900/60 p-6 rounded-md mb-8 max-w-lg text-left text-xs md:text-sm leading-relaxed text-gray-300 space-y-3">
+                <p className="text-green-500 font-bold">&gt; CONNECTING SECURE SATELLITE UPLINK...</p>
+                <p className="text-green-400 font-bold">&gt; [SUCCESS] Congratulations Agent! You have successfully penetrated all encryption layers for this operation. The Special Task Force Cyber Security & OSINT Unit has secured the perimeter.</p>
+                <p className="text-cyan-500/80">&gt; INTEL FILE DOWNLOAD COMPLETE. ENCRYPTED DATABASE PURGED.</p>
+              </div>
+
+              {/* Action Redirect Button */}
+              <button
+                onClick={() => {
+                  setShowFinalClearModal(false);
+                  router.push('/');
+                }}
+                className="relative group overflow-hidden bg-gradient-to-r from-green-600 to-cyan-600 hover:from-green-500 hover:to-cyan-500 text-white font-bold py-3.5 px-8 rounded border border-green-400 shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:shadow-[0_0_30px_rgba(6,182,212,0.5)] transition-all duration-300 tracking-widest text-xs uppercase"
+              >
+                <span className="relative z-10">RETURN TO COMMAND CENTER // ⚡</span>
+                <div className="absolute inset-0 -translate-x-full group-hover:translate-x-0 bg-gradient-to-r from-cyan-500 to-green-500 transition-transform duration-500 ease-out opacity-25"></div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

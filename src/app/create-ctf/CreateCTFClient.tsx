@@ -27,6 +27,7 @@ export default function CreateCTFClient() {
         description,
         creator_uid: user.uid,
         created_at: serverTimestamp(),
+        isPublished: false,
       });
       
       router.push(`/ctf/${docRef.id}`);
@@ -39,19 +40,19 @@ export default function CreateCTFClient() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-white mb-6">Create New CTF Operation</h1>
+    <div className="max-w-2xl mx-auto px-4 py-8 font-mono text-cyan-400">
+      <h1 className="text-3xl font-bold tracking-widest text-white mb-6 uppercase">&gt; CREATE_NEW_CTF_OPERATION</h1>
       
-      <form onSubmit={handleSubmit} className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+      <form onSubmit={handleSubmit} className="bg-gray-900 p-6 rounded border border-cyan-900 shadow-2xl">
         <div className="mb-4">
-          <label className="block text-gray-300 font-bold mb-2" htmlFor="title">
-            Operation Title
+          <label className="block text-xs font-bold uppercase tracking-wider text-cyan-500 mb-2" htmlFor="title">
+            OPERATION TITLE
           </label>
           <input
             id="title"
             type="text"
-            className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded text-white focus:outline-none focus:border-blue-500"
-            placeholder="e.g. Operation Dark Web"
+            className="w-full px-3 py-2 bg-black border border-cyan-900 rounded text-cyan-400 focus:outline-none focus:border-cyan-500 font-mono text-sm"
+            placeholder="e.g. OPERATION_DARK_WEB"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
@@ -59,14 +60,14 @@ export default function CreateCTFClient() {
         </div>
 
         <div className="mb-6">
-          <label className="block text-gray-300 font-bold mb-2" htmlFor="description">
-            Mission Briefing (Description & Links)
+          <label className="block text-xs font-bold uppercase tracking-wider text-cyan-500 mb-2" htmlFor="description">
+            MISSION BRIEFING (DESCRIPTION & LINKS)
           </label>
           <textarea
             id="description"
             rows={6}
-            className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded text-white focus:outline-none focus:border-blue-500"
-            placeholder="Provide the briefing and initial evidence links..."
+            className="w-full px-3 py-2 bg-black border border-cyan-900 rounded text-cyan-400 focus:outline-none focus:border-cyan-500 font-mono text-sm resize-none"
+            placeholder="Provide operational briefing coordinates and initial evidence links..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             required
@@ -76,9 +77,9 @@ export default function CreateCTFClient() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded transition-colors disabled:opacity-50"
+          className="w-full py-3 px-4 bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-700 hover:border-cyan-500 text-cyan-400 font-bold rounded transition-colors tracking-wide font-mono uppercase text-sm disabled:opacity-40"
         >
-          {isSubmitting ? 'Deploying...' : 'Deploy Operation'}
+          {isSubmitting ? 'DEPLOYING_OPERATION...' : 'INITIALIZE_CTF_DEPLOYMENT'}
         </button>
       </form>
     </div>

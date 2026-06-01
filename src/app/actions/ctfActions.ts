@@ -390,3 +390,55 @@ export async function updateCtfOperation(idToken: string, ctfId: string, title: 
     return { success: false, message: error.message || 'Failed to update CTF operation.' };
   }
 }
+
+// 8. Reset all completed challenges progress for a user in a specific CTF operation
+export async function resetEntireOperationProgress(idToken: string, ctfId: string) {
+  try {
+    let decodedToken;
+    try {
+      decodedToken = await adminAuth.verifyIdToken(idToken);
+    } catch (authError) {
+      console.error("Auth error in resetEntireOperationProgress:", authError);
+      return { success: false, message: 'Unauthorized: Invalid session.' };
+    }
+
+    if (!decodedToken) {
+      return { success: false, message: 'Unauthorized.' };
+    }
+
+    const userId = decodedToken.uid;
+    const userRef = adminDb.collection('users').doc(userId);
+    const submissionRef = adminDb.collection('submissions').doc(`${userId}_${ctfId}`);
+
+    await adminDb.runTransaction(async (transaction) => {
+      const subDoc = await transaction.get(submissionRef);
+      if (!subDoc.exists) {
+        throw new Error('NO_SUBMISSIONS');
+      }
+
+      const totalScore = subDoc.data()?.total_score || 0;
+      const userDoc = await transaction.get(userRef);
+      const currentGlobalScore = userDoc.exists ? (userDoc.data()?.global_score || 0) : 0;
+
+      // Deduct the ctf total_score from the user's global_score
+      const newGlobalScore = Math.max(0, currentGlobalScore - totalScore);
+
+      transaction.set(submissionRef, {
+        total_score: 0,
+        completed_challenges: []
+      }, { merge: true });
+
+      transaction.set(userRef, {
+        global_score: newGlobalScore
+      }, { merge: true });
+    });
+
+    return { success: true, message: 'Operation progress reset successfully.' };
+  } catch (error: any) {
+    if (error.message === 'NO_SUBMISSIONS') {
+      return { success: true, message: 'No progress found to reset.' };
+    }
+    console.error("Error resetting entire operation progress:", error);
+    return { success: false, message: 'Server error occurred during progress reset.' };
+  }
+}

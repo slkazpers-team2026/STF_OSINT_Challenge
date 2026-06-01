@@ -43,7 +43,13 @@ export default function Navbar() {
                 {user ? (
                   <div className="flex items-center gap-4">
                     <div className="text-sm text-gray-300">
-                      <span className="font-mono">{userData?.displayName || user.displayName || user.email}</span>
+                      <Link 
+                        href="/settings" 
+                        className="font-mono hover:text-green-400 hover:underline transition-colors"
+                        title="Open agent settings configuration"
+                      >
+                        {userData?.displayName || user.displayName || user.email}
+                      </Link>
                       {userData?.role && (
                         <span className={`ml-2 px-2 py-0.5 rounded text-xs uppercase tracking-wider font-bold ${userData.role === 'admin' ? 'bg-red-900/50 text-red-400 border border-red-800' : 'bg-gray-700 text-gray-400'}`}>
                           {userData.role}

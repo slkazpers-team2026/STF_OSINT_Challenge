@@ -81,3 +81,38 @@ export async function syncNewUser(idToken: string, username: string) {
     return { success: false, message: 'Internal server error during profile synchronization.' };
   }
 }
+
+/**
+ * Action: Updates a user's display name inside Cloud Firestore databases (users, public_profiles)
+ * and submissions collections in a single batch.
+ */
+export async function updateAgentProfile(idToken: string, newDisplayName: string) {
+  try {
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    const uid = decodedToken.uid;
+    const cleanName = newDisplayName.trim();
+
+    if (!cleanName) {
+      return { success: false, message: 'Display name cannot be empty.' };
+    }
+
+    const batch = adminDb.batch();
+    const userRef = adminDb.collection('users').doc(uid);
+    const profileRef = adminDb.collection('public_profiles').doc(uid);
+
+    batch.set(userRef, { displayName: cleanName }, { merge: true });
+    batch.set(profileRef, { displayName: cleanName }, { merge: true });
+
+    // Update submissions displayName for this user too
+    const submissionsSnap = await adminDb.collection('submissions').where('user_id', '==', uid).get();
+    submissionsSnap.docs.forEach(doc => {
+      batch.update(doc.ref, { displayName: cleanName });
+    });
+
+    await batch.commit();
+    return { success: true, message: 'Agent profiles updated successfully.' };
+  } catch (error: any) {
+    console.error("Error in updateAgentProfile action:", error);
+    return { success: false, message: error.message || 'Failed to update agent profile.' };
+  }
+}

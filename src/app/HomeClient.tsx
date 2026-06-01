@@ -11,6 +11,8 @@ interface CTF {
   id: string;
   title: string;
   description: string;
+  isPublished?: boolean;
+  creator_uid?: string;
 }
 
 export default function HomeClient() {
@@ -23,12 +25,17 @@ export default function HomeClient() {
       try {
         const q = query(collection(db, 'ctfs'), orderBy('created_at', 'desc'));
         const querySnapshot = await getDocs(q);
-        const ctfData = querySnapshot.docs.map(doc => ({
+        const allCtfs = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         })) as CTF[];
         
-        setCtfs(ctfData);
+        // Filter out drafts unless the current user is the creator
+        const visibleCtfs = allCtfs.filter(ctf => 
+          ctf.isPublished === true || ctf.creator_uid === user?.uid
+        );
+        
+        setCtfs(visibleCtfs);
       } catch (error) {
         console.error("Error fetching CTFs:", error);
       } finally {
@@ -37,7 +44,7 @@ export default function HomeClient() {
     };
 
     fetchCTFs();
-  }, []);
+  }, [user]);
 
   return (
     <div className="container mx-auto px-4 py-8">
