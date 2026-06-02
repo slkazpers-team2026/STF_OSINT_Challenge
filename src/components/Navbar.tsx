@@ -30,6 +30,11 @@ export default function Navbar() {
             <Link href="/leaderboard" className="text-gray-300 hover:text-white transition-colors text-sm font-medium">
               Global Leaderboard
             </Link>
+            {user && (
+              <Link href={`/profile/${user.uid}`} className="text-gray-300 hover:text-white transition-colors text-sm font-medium">
+                My Profile
+              </Link>
+            )}
             {userData?.role === 'admin' && (
               <Link href="/admin/users" className="text-gray-300 hover:text-white transition-colors text-sm font-medium">
                 Users

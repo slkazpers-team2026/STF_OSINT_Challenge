@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, getDocs, orderBy, query } from 'firebase/firestore';
+import { collection, getDocs, orderBy, query, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import CTFCard from '@/components/CTFCard';
@@ -13,6 +13,8 @@ interface CTF {
   description: string;
   isPublished?: boolean;
   creator_uid?: string;
+  creatorName?: string;
+  displayName?: string;
 }
 
 export default function HomeClient() {
@@ -30,8 +32,46 @@ export default function HomeClient() {
           ...doc.data()
         })) as CTF[];
         
+        // Gather unique creator_uids that don't have creatorName/displayName in the document
+        const uidsToFetch = Array.from(new Set(
+          allCtfs
+            .filter(ctf => ctf.creator_uid && !ctf.creatorName && !ctf.displayName)
+            .map(ctf => ctf.creator_uid)
+        )) as string[];
+
+        // Fetch display names for these uids
+        const nameMap: { [uid: string]: string } = {};
+        if (uidsToFetch.length > 0) {
+          await Promise.all(
+            uidsToFetch.map(async (uid) => {
+              try {
+                const userSnap = await getDoc(doc(db, 'users', uid));
+                if (userSnap.exists()) {
+                  nameMap[uid] = userSnap.data()?.displayName || 'Unknown Agent';
+                }
+              } catch (e) {
+                console.error("Error fetching creator display name:", e);
+              }
+            })
+          );
+        }
+
+        // Map resolved display names back to allCtfs
+        const resolvedCtfs = allCtfs.map(ctf => {
+          if (ctf.creatorName || ctf.displayName) {
+            return ctf;
+          }
+          if (ctf.creator_uid && nameMap[ctf.creator_uid]) {
+            return {
+              ...ctf,
+              creatorName: nameMap[ctf.creator_uid]
+            };
+          }
+          return ctf;
+        });
+
         // Filter out drafts unless the current user is the creator
-        const visibleCtfs = allCtfs.filter(ctf => 
+        const visibleCtfs = resolvedCtfs.filter(ctf => 
           ctf.isPublished === true || ctf.creator_uid === user?.uid
         );
         
@@ -72,7 +112,12 @@ export default function HomeClient() {
               key={ctf.id} 
               id={ctf.id} 
               title={ctf.title} 
-              description={ctf.description} 
+              description={ctf.description}
+              creatorName={ctf.creatorName}
+              displayName={ctf.displayName}
+              creator_uid={ctf.creator_uid}
+              isPublished={ctf.isPublished}
+              currentUserUid={user?.uid}
             />
           ))}
         </div>

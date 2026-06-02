@@ -71,6 +71,31 @@ export default function CTFDetailPage({ params }: { params: { id: string } }) {
     }
   }, [ctfId, user]);
 
+  const fetchCtfDetails = useCallback(async () => {
+    try {
+      const ctfRef = doc(db, 'ctfs', ctfId);
+      const ctfSnap = await getDoc(ctfRef);
+      if (ctfSnap.exists()) {
+        const ctfData = ctfSnap.data();
+        setCtfDetails(ctfData);
+        
+        if (ctfData.creator_uid && !ctfData.creatorName && !ctfData.displayName) {
+          const userRef = doc(db, 'users', ctfData.creator_uid);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists()) {
+            const uData = userSnap.data();
+            setCtfDetails((prev: any) => ({
+              ...prev,
+              creatorName: uData.displayName
+            }));
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching CTF details:", error);
+    }
+  }, [ctfId]);
+
   // 1. Countdown timer effect: tick down every 1 second
   useEffect(() => {
     if (!showDecryptModal || countdown <= 0) return;
@@ -161,9 +186,7 @@ export default function CTFDetailPage({ params }: { params: { id: string } }) {
       try {
         setLoading(true);
         // 1. Client SDK එකෙන් CTF විස්තර ගැනීම
-        const ctfRef = doc(db, 'ctfs', ctfId);
-        const ctfSnap = await getDoc(ctfRef);
-        if (ctfSnap.exists()) setCtfDetails(ctfSnap.data());
+        await fetchCtfDetails();
 
         // 2. Server Action එක හරහා ආරක්ෂිතව Challenges ගැනීම (Flag එක නැතුව)
         await fetchChallenges();
@@ -174,7 +197,7 @@ export default function CTFDetailPage({ params }: { params: { id: string } }) {
       }
     };
     fetchData();
-  }, [ctfId, user, fetchChallenges]);
+  }, [ctfId, user, fetchChallenges, fetchCtfDetails]);
 
   // Update edit CTF form state when details are loaded
   useEffect(() => {
@@ -306,9 +329,7 @@ export default function CTFDetailPage({ params }: { params: { id: string } }) {
         setIsEditCtfOpen(false);
         
         // Reload details
-        const ctfRef = doc(db, 'ctfs', ctfId);
-        const ctfSnap = await getDoc(ctfRef);
-        if (ctfSnap.exists()) setCtfDetails(ctfSnap.data());
+        await fetchCtfDetails();
       } else {
         alert(res.message);
       }
@@ -331,8 +352,7 @@ export default function CTFDetailPage({ params }: { params: { id: string } }) {
       await updateDoc(ctfRef, { isPublished: true });
       
       // Reload details locally
-      const ctfSnap = await getDoc(ctfRef);
-      if (ctfSnap.exists()) setCtfDetails(ctfSnap.data());
+      await fetchCtfDetails();
       alert("Operation successfully published to registry.");
     } catch (error: any) {
       console.error("Error publishing operation:", error);
@@ -369,14 +389,21 @@ export default function CTFDetailPage({ params }: { params: { id: string } }) {
       {/* Mission Briefing */}
       <div className="bg-gray-800 p-8 rounded-lg border border-gray-700 mb-8 shadow-lg">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
-          <h1 className="text-4xl font-bold text-white flex items-center gap-3">
-            {ctfDetails.title}
-            {!ctfDetails.isPublished && (
-              <span className="bg-yellow-950/30 text-yellow-500 text-xs font-bold px-2.5 py-1 rounded border border-yellow-900 font-mono">
-                DRAFT
-              </span>
+          <div>
+            <h1 className="text-4xl font-bold text-white flex items-center gap-3">
+              {ctfDetails.title}
+              {!ctfDetails.isPublished && (
+                <span className="bg-yellow-950/30 text-yellow-500 text-xs font-bold px-2.5 py-1 rounded border border-yellow-900 font-mono">
+                  DRAFT
+                </span>
+              )}
+            </h1>
+            {(ctfDetails.creatorName || ctfDetails.displayName) && (
+              <div className="text-xs text-cyan-500/70 font-mono mt-1">
+                By {ctfDetails.creatorName || ctfDetails.displayName}
+              </div>
             )}
-          </h1>
+          </div>
           <div className="flex flex-wrap gap-2">
             <a 
               href={`/ctf/${ctfId}/leaderboard`}

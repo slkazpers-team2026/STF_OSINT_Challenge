@@ -10,7 +10,7 @@ export default function CreateCTFClient() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { user, loading } = useAuth();
+  const { user, userData, loading } = useAuth();
   const router = useRouter();
 
   if (loading) return <p className="p-8 text-center text-gray-400">Loading...</p>;
@@ -26,6 +26,8 @@ export default function CreateCTFClient() {
         title,
         description,
         creator_uid: user.uid,
+        creatorName: userData?.displayName || user.displayName || 'Unknown Agent',
+        displayName: userData?.displayName || user.displayName || 'Unknown Agent',
         created_at: serverTimestamp(),
         isPublished: false,
       });

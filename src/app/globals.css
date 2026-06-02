@@ -7,3 +7,12 @@
     @apply bg-gray-900 text-white min-h-screen flex flex-col;
   }
 }
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.blink-effect {
+  animation: blink 1.5s infinite;
+}
