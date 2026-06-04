@@ -12,7 +12,8 @@ import {
   deleteChallenge, 
   deleteCtfOperation, 
   updateCtfOperation,
-  resetEntireOperationProgress
+  resetEntireOperationProgress,
+  publishCtfOperation
 } from '@/app/actions/ctfActions';
 import AddChallengeModal from '@/components/AddChallengeModal';
 import { useRouter } from 'next/navigation';
@@ -348,12 +349,16 @@ export default function CTFDetailPage({ params }: { params: { id: string } }) {
 
     try {
       setLoading(true);
-      const ctfRef = doc(db, 'ctfs', ctfId);
-      await updateDoc(ctfRef, { isPublished: true });
+      const idToken = await user.getIdToken();
+      const res = await publishCtfOperation(idToken, ctfId);
       
-      // Reload details locally
-      await fetchCtfDetails();
-      alert("Operation successfully published to registry.");
+      if (res.success) {
+        // Reload details locally
+        await fetchCtfDetails();
+        alert(res.message || "Operation successfully published to registry.");
+      } else {
+        alert(res.message);
+      }
     } catch (error: any) {
       console.error("Error publishing operation:", error);
       alert("Failed to publish operation: " + (error.message || error));

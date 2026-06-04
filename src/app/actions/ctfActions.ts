@@ -1,6 +1,6 @@
 'use server';
 
-import { adminDb, adminAuth } from '@/lib/firebase/admin';
+import { adminDb, adminAuth, adminFirestore } from '@/lib/firebase/admin';
 
 // 1. Flag එක ඉවත් කර ආරක්ෂිතව Challenges ලබා දෙන Action එක
 export async function getSafeChallenges(idToken: string, ctfId: string) {
@@ -442,3 +442,70 @@ export async function resetEntireOperationProgress(idToken: string, ctfId: strin
     return { success: false, message: 'Server error occurred during progress reset.' };
   }
 }
+
+// 9. Publish a CTF Operation and award 1000 points to the creator (if not already awarded)
+export async function publishCtfOperation(idToken: string, ctfId: string) {
+  try {
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    const userId = decodedToken.uid;
+    const isAdmin = decodedToken.role === 'admin';
+
+    const ctfRef = adminDb.collection('ctfs').doc(ctfId);
+
+    let pointsAwarded = false;
+    let creatorUid = '';
+
+    await adminDb.runTransaction(async (transaction) => {
+      const ctfSnap = await transaction.get(ctfRef);
+      if (!ctfSnap.exists) {
+        throw new Error('CTF_NOT_FOUND');
+      }
+
+      const ctfData = ctfSnap.data();
+      creatorUid = ctfData?.creator_uid || '';
+
+      // Ensure the caller is either the creator or an admin
+      if (!isAdmin && creatorUid !== userId) {
+        throw new Error('UNAUTHORIZED');
+      }
+
+      // Check if points have already been awarded
+      const alreadyAwarded = ctfData?.points_awarded === true;
+
+      // Update the CTF document to be published and mark points as awarded
+      const updateData: any = { isPublished: true };
+      if (!alreadyAwarded) {
+        updateData.points_awarded = true;
+        pointsAwarded = true;
+      }
+
+      transaction.update(ctfRef, updateData);
+
+      // Increment points for the creator if not already awarded
+      if (!alreadyAwarded && creatorUid) {
+        const creatorUserRef = adminDb.collection('users').doc(creatorUid);
+        transaction.update(creatorUserRef, {
+          global_score: adminFirestore.FieldValue.increment(1000)
+        });
+      }
+    });
+
+    return { 
+      success: true, 
+      message: pointsAwarded 
+        ? 'Operation successfully published! You have been awarded 1000 points.' 
+        : 'Operation successfully published.' 
+    };
+  } catch (error: any) {
+    console.error("Error in publishCtfOperation server action:", error);
+    if (error.message === 'CTF_NOT_FOUND') {
+      return { success: false, message: 'CTF Operation not found.' };
+    }
+    if (error.message === 'UNAUTHORIZED') {
+      return { success: false, message: 'Unauthorized: Access denied.' };
+    }
+    return { success: false, message: error.message || 'Failed to publish CTF operation.' };
+  }
+}
+
+export const publishCTF = publishCtfOperation;
