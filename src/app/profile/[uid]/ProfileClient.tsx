@@ -53,10 +53,10 @@ export default function ProfileClient({ uid }: { uid: string }) {
     return (
       <div className="container mx-auto px-4 py-16 text-center font-mono text-red-500 max-w-md border border-red-900 bg-red-950/20 rounded p-6">
         <h1 className="text-xl font-bold uppercase tracking-widest mb-4">{"Error // Access Denied"}</h1>
-        <p className="text-sm text-red-400 mb-6">{error || 'Agent record not found in system database.'}</p>
+        <p className="text-base text-red-400 mb-6">{error || 'Agent record not found in system database.'}</p>
         <Link 
           href="/leaderboard"
-          className="inline-block bg-red-950/40 hover:bg-red-900/60 border border-red-700 text-red-400 px-4 py-2 rounded text-sm transition-colors uppercase tracking-wider"
+          className="inline-block bg-red-950/40 hover:bg-red-900/60 border border-red-700 text-red-400 px-4 py-2 rounded text-base transition-colors uppercase tracking-wider"
         >
           Return to Leaderboard
         </Link>
@@ -292,7 +292,7 @@ export default function ProfileClient({ uid }: { uid: string }) {
       <div className="mb-6">
         <Link 
           href="/leaderboard" 
-          className="text-xs text-cyan-600 hover:text-cyan-400 transition-colors uppercase tracking-wider flex items-center gap-1.5"
+          className="text-sm text-cyan-600 hover:text-cyan-400 transition-colors uppercase tracking-wider flex items-center gap-1.5"
         >
           &lt; return_to_leaderboard
         </Link>
@@ -317,15 +317,15 @@ export default function ProfileClient({ uid }: { uid: string }) {
           <div className="text-center md:text-left flex-grow">
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
               <h1 className="text-3xl font-bold tracking-widest text-white uppercase">{profile.displayName}</h1>
-              <span className="text-[10px] font-mono border border-cyan-500/30 text-cyan-500 bg-cyan-950/20 px-2 py-0.5 rounded tracking-widest uppercase animate-pulse">
+              <span className="text-xs font-mono border border-cyan-500/30 text-cyan-500 bg-cyan-950/20 px-2 py-0.5 rounded tracking-widest uppercase animate-pulse">
                 AGENT_READY
               </span>
             </div>
-            <p className="text-xs text-cyan-600 mt-2 font-mono uppercase tracking-wider">
+            <p className="text-sm text-cyan-600 mt-2 font-mono uppercase tracking-wider">
               System ID: <span className="text-cyan-500/70">{uid.substring(0, 15)}...</span>
             </p>
             {profile.createdAt && (
-              <p className="text-xs text-cyan-600 mt-1 font-mono uppercase tracking-wider">
+              <p className="text-sm text-cyan-600 mt-1 font-mono uppercase tracking-wider">
                 Registration Date: <span className="text-cyan-500/70">{new Date(profile.createdAt).toLocaleDateString()}</span>
               </p>
             )}
@@ -335,7 +335,7 @@ export default function ProfileClient({ uid }: { uid: string }) {
                 style={{ width: `${Math.min(100, (profile.global_score / 15000) * 100)}%` }}
               ></div>
             </div>
-            <div className="flex justify-between text-[10px] text-cyan-600/70 mt-1">
+            <div className="flex justify-between text-xs text-cyan-600/70 mt-1">
               <span>LVL_0</span>
               <span>{`PROG_TO_GOD_MODE // ${profile.global_score}/15000 PTS`}</span>
               <span>LVL_MAX</span>
@@ -345,22 +345,22 @@ export default function ProfileClient({ uid }: { uid: string }) {
       </div>
 
       {/* Stats Card Grid */}
-      <h2 className="text-sm font-bold tracking-widest uppercase text-white mb-4 flex items-center gap-2">
+      <h2 className="text-base font-bold tracking-widest uppercase text-white mb-4 flex items-center gap-2">
         <span className="text-cyan-500">&gt;</span> OPERATIONAL_STATISTICS
       </h2>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {/* Total Points */}
         <div className="bg-black/60 border border-cyan-950 rounded p-4 relative overflow-hidden flex flex-col justify-between min-h-[100px] shadow-[0_0_10px_rgba(0,0,0,0.3)]">
-          <div className="text-[10px] text-cyan-600 uppercase tracking-widest">Total Points</div>
+          <div className="text-xs text-cyan-600 uppercase tracking-widest">Total Points</div>
           <div className="text-2xl font-black text-green-400 mt-2 tracking-wide drop-shadow-[0_0_6px_rgba(34,197,94,0.3)]">
-            {profile.global_score} <span className="text-xs font-normal text-cyan-600">PTS</span>
+            {profile.global_score} <span className="text-sm font-normal text-cyan-600">PTS</span>
           </div>
           <div className="absolute top-0 right-0 w-2 h-2 bg-green-500/20"></div>
         </div>
 
         {/* Global Rank */}
         <div className="bg-black/60 border border-cyan-950 rounded p-4 relative overflow-hidden flex flex-col justify-between min-h-[100px] shadow-[0_0_10px_rgba(0,0,0,0.3)]">
-          <div className="text-[10px] text-cyan-600 uppercase tracking-widest">Global Rank</div>
+          <div className="text-xs text-cyan-600 uppercase tracking-widest">Global Rank</div>
           <div className="text-2xl font-black text-cyan-400 mt-2 tracking-wide drop-shadow-[0_0_6px_rgba(6,182,212,0.3)]">
             #{globalRank}
           </div>
@@ -369,32 +369,32 @@ export default function ProfileClient({ uid }: { uid: string }) {
 
         {/* Operations Attempted */}
         <div className="bg-black/60 border border-cyan-950 rounded p-4 relative overflow-hidden flex flex-col justify-between min-h-[100px] shadow-[0_0_10px_rgba(0,0,0,0.3)]">
-          <div className="text-[10px] text-cyan-600 uppercase tracking-widest">Ops Attempted</div>
+          <div className="text-xs text-cyan-600 uppercase tracking-widest">Ops Attempted</div>
           <div className="text-2xl font-black text-purple-400 mt-2 tracking-wide drop-shadow-[0_0_6px_rgba(168,85,247,0.3)]">
-            {operationsAttempted} <span className="text-xs font-normal text-cyan-600">UNITS</span>
+            {operationsAttempted} <span className="text-sm font-normal text-cyan-600">UNITS</span>
           </div>
           <div className="absolute top-0 right-0 w-2 h-2 bg-purple-500/20"></div>
         </div>
 
         {/* Badges Earned */}
         <div className="bg-black/60 border border-cyan-950 rounded p-4 relative overflow-hidden flex flex-col justify-between min-h-[100px] shadow-[0_0_10px_rgba(0,0,0,0.3)]">
-          <div className="text-[10px] text-cyan-600 uppercase tracking-widest">Badges Earned</div>
+          <div className="text-xs text-cyan-600 uppercase tracking-widest">Badges Earned</div>
           <div className="text-2xl font-black text-pink-400 mt-2 tracking-wide drop-shadow-[0_0_6px_rgba(236,72,153,0.3)]">
-            {badgesEarnedCount} <span className="text-xs font-normal text-cyan-600">/ 20</span>
+            {badgesEarnedCount} <span className="text-sm font-normal text-cyan-600">/ 20</span>
           </div>
           <div className="absolute top-0 right-0 w-2 h-2 bg-pink-500/20"></div>
         </div>
       </div>
 
       {/* Badges / Achievements Section */}
-      <h2 className="text-sm font-bold tracking-widest uppercase text-white mb-6 flex items-center gap-2">
+      <h2 className="text-base font-bold tracking-widest uppercase text-white mb-6 flex items-center gap-2">
         <span className="text-cyan-500">&gt;</span> SPECIAL_ACCESS_BADGES
       </h2>
       
       <div className="space-y-8">
         {sectors.map(sector => (
           <div key={sector.name} className="border border-cyan-950/60 p-6 rounded bg-black/40 relative">
-            <h3 className={`text-xs font-bold uppercase tracking-widest mb-4 ${sector.colorClass}`}>
+            <h3 className={`text-sm font-bold uppercase tracking-widest mb-4 ${sector.colorClass}`}>
               {`// ${sector.name}`}
             </h3>
             
@@ -416,17 +416,17 @@ export default function ProfileClient({ uid }: { uid: string }) {
 
                   <div>
                     <div className="flex items-center justify-between gap-1 mb-2">
-                      <span className="text-[10px] font-black tracking-wider uppercase border border-current px-1.5 py-0.2 rounded shrink-0">
+                      <span className="text-xs font-black tracking-wider uppercase border border-current px-1.5 py-0.2 rounded shrink-0">
                         {badge.unlocked ? badge.name : '[LOCKED]'}
                       </span>
                     </div>
 
-                    <p className="text-[11px] text-white/90 font-sans mt-2 leading-relaxed">
+                    <p className="text-xs text-white/90 font-sans mt-2 leading-relaxed">
                       {badge.unlocked ? badge.description : `Auth status: ${badge.corruptText}`}
                     </p>
                   </div>
 
-                  <div className="text-[9px] text-cyan-600/50 mt-4 font-mono text-right">
+                  <div className="text-[10px] text-cyan-600/50 mt-4 font-mono text-right">
                     {badge.unlocked ? `AUTH // OK` : `AUTH // REJECT`}
                   </div>
                 </div>

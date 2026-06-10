@@ -30,7 +30,7 @@ export default function CTFCard({
         <div className="flex items-start justify-between gap-2 mb-2">
           <h3 className="text-xl font-bold text-white leading-tight">{title}</h3>
           {showDraftBadge && (
-            <span className="text-xs font-mono border border-amber-500/50 text-amber-400 bg-amber-950/20 px-2 py-0.5 rounded shrink-0 blink-effect">
+            <span className="text-sm font-mono border border-amber-500/50 text-amber-400 bg-amber-950/20 px-2 py-0.5 rounded shrink-0 blink-effect">
               [DRAFT - NOT LIVE]
             </span>
           )}
@@ -38,19 +38,19 @@ export default function CTFCard({
         
         {/* Creator Name */}
         {nameToDisplay && (
-          <div className="text-xs text-cyan-500/70 font-mono mb-3">
+          <div className="text-sm text-cyan-500/70 font-mono mb-3">
             By {nameToDisplay}
           </div>
         )}
         
         {/* Description එක දිග වැඩි නම් කපා පෙන්වීම (truncate) */}
-        <p className="text-gray-400 mb-6 line-clamp-3 font-sans text-sm leading-relaxed">{description}</p>
+        <p className="text-gray-400 mb-6 line-clamp-3 font-sans text-base leading-relaxed">{description}</p>
       </div>
       
       <div className="mt-auto">
         <Link 
           href={`/ctf/${id}`}
-          className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors text-sm"
+          className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-5 rounded transition-colors text-base font-mono border border-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.3)] hover:shadow-[0_0_12px_rgba(59,130,246,0.6)]"
         >
           Start Mission
         </Link>

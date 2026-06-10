@@ -509,3 +509,56 @@ export async function publishCtfOperation(idToken: string, ctfId: string) {
 }
 
 export const publishCTF = publishCtfOperation;
+
+export async function submitWriteup(
+  idToken: string,
+  ctfId: string,
+  challengeId: string,
+  methodology: string
+) {
+  try {
+    let decodedToken;
+    try {
+      decodedToken = await adminAuth.verifyIdToken(idToken);
+    } catch (authError) {
+      console.error("Auth error in submitWriteup:", authError);
+      return { success: false, message: 'Unauthorized: Invalid session.' };
+    }
+
+    if (!decodedToken) {
+      return { success: false, message: 'Unauthorized.' };
+    }
+
+    const userId = decodedToken.uid;
+
+    // Check if the user has completed this specific challenge
+    const submissionRef = adminDb.collection('submissions').doc(`${userId}_${ctfId}`);
+    const subSnap = await submissionRef.get();
+
+    const isSolved = subSnap.exists && (subSnap.data()?.completed_challenges || []).includes(challengeId);
+
+    if (!isSolved) {
+      return { success: false, message: 'Access Denied: You must solve this challenge before posting a writeup.' };
+    }
+
+    // Get user details for displayName
+    const userRef = adminDb.collection('users').doc(userId);
+    const userSnap = await userRef.get();
+    const displayName = userSnap.exists ? (userSnap.data()?.displayName || 'Unknown Officer') : 'Unknown Officer';
+
+    // Add the writeup to Firestore
+    await adminDb.collection('writeups').add({
+      challengeId,
+      ctfId,
+      userId,
+      displayName,
+      methodology: methodology.trim(),
+      createdAt: adminFirestore.FieldValue.serverTimestamp()
+    });
+
+    return { success: true, message: 'Debriefing methodology successfully logged to registry.' };
+  } catch (error) {
+    console.error("Error in submitWriteup action:", error);
+    return { success: false, message: 'Server failed to submit writeup.' };
+  }
+}

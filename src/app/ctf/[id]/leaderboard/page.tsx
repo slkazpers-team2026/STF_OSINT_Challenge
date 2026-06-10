@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, query, where, orderBy, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 
 interface CTFSubmission {
@@ -22,8 +22,7 @@ export default function CTFLeaderboardPage({ params }: { params: { id: string } 
         // 1. අදාළ CTF එකට අයත් submissions ලබාගැනීම
         const q = query(
           collection(db, 'submissions'),
-          where('ctf_id', '==', ctfId),
-          orderBy('total_score', 'desc')
+          where('ctf_id', '==', ctfId)
         );
         const snapshot = await getDocs(q);
         
@@ -53,6 +52,10 @@ export default function CTFLeaderboardPage({ params }: { params: { id: string } 
 
         // Admin පරිශීලකයින් ඉවත් කිරීම
         const filteredSubs = subsData.filter(sub => sub.role !== 'admin');
+        
+        // Sort client-side by total_score descending
+        filteredSubs.sort((a, b) => b.total_score - a.total_score);
+
         setSubmissions(filteredSubs);
       } catch (error) {
         console.error("Error fetching CTF leaderboard:", error);

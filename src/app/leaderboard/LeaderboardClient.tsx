@@ -59,7 +59,7 @@ export default function LeaderboardClient() {
           
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-950/80 border-b border-cyan-950 text-cyan-500 text-xs tracking-wider">
+              <tr className="bg-gray-950/80 border-b border-cyan-950 text-cyan-500 text-sm tracking-wider">
                 <th className="py-4 px-6 font-bold uppercase">RANK</th>
                 <th className="py-4 px-6 font-bold uppercase">AGENT ID / CODENAME</th>
                 <th className="py-4 px-6 font-bold text-right uppercase">SCORE</th>
@@ -71,7 +71,7 @@ export default function LeaderboardClient() {
                   key={player.uid} 
                   className="border-b border-cyan-950/40 hover:bg-cyan-950/20 transition-all duration-200"
                 >
-                  <td className="py-4 px-6 text-cyan-600 font-mono text-sm">#{index + 1}</td>
+                  <td className="py-4 px-6 text-cyan-600 font-mono text-base">#{index + 1}</td>
                   <td className="py-4 px-6 font-medium text-white">
                     <Link 
                       href={`/profile/${player.uid}`}

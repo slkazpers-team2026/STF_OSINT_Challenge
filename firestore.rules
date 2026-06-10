@@ -53,5 +53,15 @@ service cloud.firestore {
       // Frontend එකෙන් ලකුණු update කිරීම සම්පූර්ණයෙන්ම තහනම්. Admin SDK (Server Actions) හරහා පමණක් සිදු විය යුතුයි.
       allow write: if false; 
     }
+
+    // 5. Reviews Collection
+    match /reviews/{reviewId} {
+      allow read, create: if isAuth();
+    }
+
+    // 6. Writeups Collection
+    match /writeups/{writeupId} {
+      allow read, create: if isAuth();
+    }
   }
 }

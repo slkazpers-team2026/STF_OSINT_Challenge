@@ -235,20 +235,20 @@ export default function UsersClient() {
             <h1 className="text-3xl font-bold tracking-widest text-green-400 flex items-center gap-2">
               <span className="animate-pulse">●</span> SECURE_AGENT_REGISTRY
             </h1>
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-sm text-gray-400 mt-1">
               Admin administration dashboard for purging records, monitoring progress, and overriding objective marks.
             </p>
           </div>
           <div className="flex gap-2">
             <a 
               href="/admin"
-              className="px-4 py-2 bg-gray-900 border border-gray-700 hover:border-gray-600 text-gray-300 font-bold rounded text-xs transition-colors flex items-center gap-1.5"
+              className="px-4 py-2 bg-gray-900 border border-gray-700 hover:border-gray-600 text-gray-300 font-bold rounded text-sm transition-colors flex items-center gap-1.5"
             >
               Control Center
             </a>
             <button 
               onClick={fetchUsers} 
-              className="px-4 py-2 bg-gray-900 border border-green-500/30 hover:border-green-400 text-green-400 hover:text-green-300 font-bold rounded text-xs transition-colors flex items-center gap-2"
+              className="px-4 py-2 bg-gray-900 border border-green-500/30 hover:border-green-400 text-green-400 hover:text-green-300 font-bold rounded text-sm transition-colors flex items-center gap-2"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89M9 11l3 3L22 4" />
@@ -261,11 +261,11 @@ export default function UsersClient() {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           <div className="bg-gray-900/60 p-6 rounded-lg border border-gray-800 shadow-lg">
-            <div className="text-xs text-gray-500 uppercase tracking-widest font-bold mb-1">Total Agents</div>
+            <div className="text-sm text-gray-500 uppercase tracking-widest font-bold mb-1">Total Agents</div>
             <div className="text-3xl font-bold text-white tracking-wider">{usersList.length}</div>
           </div>
           <div className="bg-gray-900/60 p-6 rounded-lg border border-gray-800 shadow-lg">
-            <div className="text-xs text-gray-500 uppercase tracking-widest font-bold mb-1">System State</div>
+            <div className="text-sm text-gray-500 uppercase tracking-widest font-bold mb-1">System State</div>
             <div className="text-3xl font-bold text-green-400 tracking-wider flex items-center gap-2">
               <span className="relative flex h-3 w-3">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -275,14 +275,14 @@ export default function UsersClient() {
             </div>
           </div>
           <div className="bg-gray-900/60 p-6 rounded-lg border border-gray-800 shadow-lg sm:col-span-2 lg:col-span-1">
-            <div className="text-xs text-gray-500 uppercase tracking-widest font-bold mb-1">Terminal Level</div>
+            <div className="text-sm text-gray-500 uppercase tracking-widest font-bold mb-1">Terminal Level</div>
             <div className="text-3xl font-bold text-cyan-400 tracking-wider">ROOT_ADMIN</div>
           </div>
         </div>
 
         {/* Alert Messages */}
         {sysMessage && (
-          <div className={`p-4 mb-8 border rounded text-sm ${sysMessage.isError ? 'bg-red-950/20 border-red-800 text-red-400' : 'bg-green-950/20 border-green-800 text-green-400'}`}>
+          <div className={`p-4 mb-8 border rounded text-base ${sysMessage.isError ? 'bg-red-950/20 border-red-800 text-red-400' : 'bg-green-950/20 border-green-800 text-green-400'}`}>
             <strong>{sysMessage.isError ? '[SYSTEM_ALERT]:' : '[INTEL_ALERT]:'}</strong> {sysMessage.text}
           </div>
         )}
@@ -292,7 +292,7 @@ export default function UsersClient() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-gray-950 border-b border-gray-800 text-green-400 text-xs uppercase tracking-wider">
+                <tr className="bg-gray-950 border-b border-gray-800 text-green-400 text-sm uppercase tracking-wider">
                   <th className="py-4 px-6 font-bold">Agent Alias / ID</th>
                   <th className="py-4 px-6 font-bold">Security Auth Role</th>
                   <th className="py-4 px-6 font-bold text-center">Score</th>
@@ -300,7 +300,7 @@ export default function UsersClient() {
                   <th className="py-4 px-6 font-bold text-right">Operational Commands</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-800/60 text-sm">
+              <tbody className="divide-y divide-gray-800/60 text-base">
                 {usersList.map((managedUser) => (
                   <tr 
                     key={managedUser.uid} 
@@ -308,31 +308,31 @@ export default function UsersClient() {
                   >
                     <td className="py-4 px-6">
                       <div className="font-bold text-white tracking-wide">{managedUser.displayName}</div>
-                      <div className="text-xs text-gray-500 font-mono mt-0.5">{managedUser.email}</div>
+                      <div className="text-sm text-gray-500 font-mono mt-0.5">{managedUser.email}</div>
                     </td>
                     <td className="py-4 px-6">
-                      <span className={`px-2 py-0.5 rounded text-xs uppercase font-bold tracking-wider ${managedUser.role === 'admin' ? 'bg-red-900/30 text-red-400 border border-red-800' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>
+                      <span className={`px-2 py-0.5 rounded text-sm uppercase font-bold tracking-wider ${managedUser.role === 'admin' ? 'bg-red-900/30 text-red-400 border border-red-800' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>
                         {managedUser.role}
                       </span>
                     </td>
                     <td className="py-4 px-6 text-center text-blue-400 font-bold font-mono">
                       {managedUser.global_score !== undefined ? managedUser.global_score : managedUser.totalPoints} PTS
                     </td>
-                    <td className="py-4 px-6 text-xs text-gray-400">
+                    <td className="py-4 px-6 text-sm text-gray-400">
                       {managedUser.createdAt ? new Date(managedUser.createdAt).toLocaleDateString() : 'N/A'}
                     </td>
                     <td className="py-4 px-6 text-right">
                       <div className="flex gap-2 justify-end">
                         <button
                           onClick={() => openScoreEditor(managedUser)}
-                          className="px-2.5 py-1.5 bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-800 hover:border-cyan-600 rounded text-xs text-cyan-400 font-bold transition-colors"
+                          className="px-2.5 py-1.5 bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-800 hover:border-cyan-600 rounded text-sm text-cyan-400 font-bold transition-colors"
                         >
                           Edit Scores
                         </button>
                         <button
                           onClick={() => handleDeleteUser(managedUser.uid, managedUser.displayName)}
                           disabled={actionLoading !== null || managedUser.uid === user.uid}
-                          className="px-2.5 py-1.5 bg-red-950/20 hover:bg-red-950/40 border border-red-900/60 hover:border-red-700 rounded text-xs text-red-500 font-bold transition-colors disabled:opacity-30"
+                          className="px-2.5 py-1.5 bg-red-950/20 hover:bg-red-950/40 border border-red-900/60 hover:border-red-700 rounded text-sm text-red-500 font-bold transition-colors disabled:opacity-30"
                         >
                           Delete
                         </button>
@@ -342,7 +342,7 @@ export default function UsersClient() {
                 ))}
                 {usersList.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="py-12 text-center text-gray-500 italic">No registered agents detected.</td>
+                    <td colSpan={5} className="py-12 text-center text-gray-500 italic text-base">No registered agents detected.</td>
                   </tr>
                 )}
               </tbody>
@@ -368,14 +368,14 @@ export default function UsersClient() {
             </button>
             <div className="mb-4 border-b border-cyan-900/60 pb-3">
               <h2 className="text-xl font-bold tracking-widest uppercase">&gt; OVERRIDE_MARKS_SHEET</h2>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-sm text-gray-400 mt-1">
                 Editing points record for Agent: <span className="text-white font-bold">{selectedUser.displayName}</span>
               </p>
             </div>
 
             {/* Modal Alert Message */}
             {modalMessage && (
-              <div className={`p-3 mb-4 border rounded text-xs ${modalMessage.isError ? 'bg-red-950/20 border-red-800 text-red-400' : 'bg-green-950/20 border-green-800 text-green-400'}`}>
+              <div className={`p-3 mb-4 border rounded text-sm ${modalMessage.isError ? 'bg-red-950/20 border-red-800 text-red-400' : 'bg-green-950/20 border-green-800 text-green-400'}`}>
                 {modalMessage.text}
               </div>
             )}
@@ -383,15 +383,15 @@ export default function UsersClient() {
             {/* Modal Body / Scrollable Content */}
             <div className="flex-grow overflow-y-auto space-y-6 pr-2">
               {modalLoading ? (
-                <div className="py-12 text-center text-cyan-500 animate-pulse text-sm">
+                <div className="py-12 text-center text-cyan-500 animate-pulse text-base">
                   Fetching challenge records...
                 </div>
               ) : Object.keys(groupedChallenges).length === 0 ? (
-                <p className="text-gray-500 italic text-center text-sm py-12">No challenges deployed on the platform.</p>
+                <p className="text-gray-500 italic text-center text-base py-12">No challenges deployed on the platform.</p>
               ) : (
                 Object.entries(groupedChallenges).map(([ctfTitle, challenges]) => (
                   <div key={ctfTitle} className="border border-gray-800 bg-black/40 rounded p-4">
-                    <h3 className="text-sm font-bold text-white uppercase tracking-wider border-b border-gray-800 pb-2 mb-3">
+                    <h3 className="text-base font-bold text-white uppercase tracking-wider border-b border-gray-800 pb-2 mb-3">
                       Operation: {ctfTitle}
                     </h3>
                     <div className="space-y-3">
@@ -405,28 +405,28 @@ export default function UsersClient() {
                             {/* Info Section */}
                             <div className="flex-grow min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-xs font-bold text-cyan-500 bg-cyan-950/30 px-1.5 py-0.5 rounded border border-cyan-900/60 uppercase">
+                                <span className="text-sm font-bold text-cyan-500 bg-cyan-950/30 px-1.5 py-0.5 rounded border border-cyan-900/60 uppercase">
                                   Lvl {challenge.levelId}
                                 </span>
-                                <span className="text-xs font-bold text-white truncate max-w-[200px]" title={challenge.title}>
+                                <span className="text-sm font-bold text-white truncate max-w-[200px]" title={challenge.title}>
                                   {challenge.title}
                                 </span>
-                                <span className="text-[10px] text-gray-500">
+                                <span className="text-xs text-gray-500">
                                   Default: {challenge.points} PTS
                                 </span>
                               </div>
                               <div className="flex items-center gap-1.5 mt-1">
                                 {challenge.isSolved ? (
                                   <>
-                                    <span className="text-[10px] bg-green-950/30 text-green-500 font-bold px-1.5 rounded border border-green-900">
+                                    <span className="text-xs bg-green-950/30 text-green-500 font-bold px-1.5 rounded border border-green-900">
                                       SOLVED
                                     </span>
-                                    <span className={`text-[10px] font-bold ${isScoreOverridden ? 'text-yellow-500' : 'text-blue-400'}`}>
+                                    <span className={`text-xs font-bold ${isScoreOverridden ? 'text-yellow-500' : 'text-blue-400'}`}>
                                       Current Score: {challenge.userScore} PTS {isScoreOverridden && '(OVERRIDDEN)'}
                                     </span>
                                   </>
                                 ) : (
-                                  <span className="text-[10px] bg-gray-800 text-gray-500 font-bold px-1.5 rounded border border-gray-700">
+                                  <span className="text-xs bg-gray-800 text-gray-500 font-bold px-1.5 rounded border border-gray-700">
                                     UNSOLVED
                                   </span>
                                 )}
@@ -438,14 +438,14 @@ export default function UsersClient() {
                               <input 
                                 type="number" 
                                 placeholder={String(challenge.points)}
-                                className="w-16 px-2 py-1 bg-black border border-cyan-900/80 rounded text-cyan-400 text-xs font-mono text-center focus:outline-none focus:border-cyan-500"
+                                className="w-16 px-2 py-1 bg-black border border-cyan-900/80 rounded text-cyan-400 text-sm font-mono text-center focus:outline-none focus:border-cyan-500"
                                 value={scoreInputs[challenge.id] !== undefined ? scoreInputs[challenge.id] : ''}
                                 onChange={(e) => setScoreInputs({ ...scoreInputs, [challenge.id]: e.target.value })}
                               />
                               <button
                                 onClick={() => handleUpdateScore(challenge.id, challenge.points, false)}
                                 disabled={actionLoading !== null}
-                                className="px-2 py-1 bg-cyan-950/60 hover:bg-cyan-900 text-cyan-400 hover:text-cyan-300 border border-cyan-800 hover:border-cyan-600 rounded text-[10px] font-bold uppercase transition-all disabled:opacity-30"
+                                className="px-2 py-1 bg-cyan-950/60 hover:bg-cyan-900 text-cyan-400 hover:text-cyan-300 border border-cyan-800 hover:border-cyan-600 rounded text-xs font-bold uppercase transition-all disabled:opacity-30"
                               >
                                 Set
                               </button>
@@ -453,7 +453,7 @@ export default function UsersClient() {
                                 <button
                                   onClick={() => handleUpdateScore(challenge.id, challenge.points, true)}
                                   disabled={actionLoading !== null}
-                                  className="px-2 py-1 bg-red-950/20 hover:bg-red-950/40 text-red-500 hover:text-red-400 border border-red-900/50 hover:border-red-700 rounded text-[10px] font-bold uppercase transition-all disabled:opacity-30"
+                                  className="px-2 py-1 bg-red-950/20 hover:bg-red-950/40 text-red-500 hover:text-red-400 border border-red-900/50 hover:border-red-700 rounded text-xs font-bold uppercase transition-all disabled:opacity-30"
                                   title="Reset points for this challenge and relock it for user"
                                 >
                                   Reset
@@ -473,7 +473,7 @@ export default function UsersClient() {
             <div className="mt-6 border-t border-cyan-900/60 pt-3 flex justify-end">
               <button 
                 onClick={closeScoreEditor} 
-                className="px-5 py-2 bg-gray-900 border border-cyan-800 hover:border-cyan-600 text-cyan-400 hover:text-cyan-300 font-bold rounded text-xs transition-colors uppercase tracking-wider"
+                className="px-5 py-2 bg-gray-900 border border-cyan-800 hover:border-cyan-600 text-cyan-400 hover:text-cyan-300 font-bold rounded text-sm transition-colors uppercase tracking-wider"
               >
                 Close Briefing
               </button>

@@ -167,10 +167,10 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
         {/* Title / Header */}
         <div className="mb-6 text-center">
-          <h2 className="text-2xl font-bold tracking-wider text-green-400 font-mono uppercase">
+          <h2 className="text-3xl font-bold tracking-wider text-green-400 font-mono uppercase">
             {isRegister ? 'REGISTER_AGENT' : 'AUTHENTICATE_AGENT'}
           </h2>
-          <p className="text-xs text-gray-400 mt-1 font-mono">
+          <p className="text-sm text-gray-400 mt-1 font-mono">
             {isRegister ? 'Create secure portal credentials' : 'Enter decryption key details'}
           </p>
         </div>
@@ -187,13 +187,13 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           {/* Username Field (Conditional Rendering for Registration) */}
           {isRegister && (
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1 font-mono">
+              <label className="block text-sm font-bold uppercase tracking-wider text-gray-400 mb-1 font-mono">
                 Agent Alias (Username)
               </label>
               <input
                 type="text"
                 required
-                className="w-full px-3 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-green-500 font-mono text-sm"
+                className="w-full px-3 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-green-500 font-mono text-base"
                 placeholder="e.g. Neo"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -202,13 +202,13 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           )}
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1 font-mono">
+            <label className="block text-sm font-bold uppercase tracking-wider text-gray-400 mb-1 font-mono">
               Agent Email
             </label>
             <input
               type="email"
               required
-              className="w-full px-3 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-green-500 font-mono text-sm"
+              className="w-full px-3 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-green-500 font-mono text-base"
               placeholder="agent@osint.net"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -216,13 +216,13 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1 font-mono">
+            <label className="block text-sm font-bold uppercase tracking-wider text-gray-400 mb-1 font-mono">
               Access Code (Password)
             </label>
             <input
               type="password"
               required
-              className="w-full px-3 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-green-500 font-mono text-sm"
+              className="w-full px-3 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-green-500 font-mono text-base"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -232,13 +232,13 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           {/* Confirm Password Field (Conditional Rendering for Registration) */}
           {isRegister && (
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1 font-mono">
+              <label className="block text-sm font-bold uppercase tracking-wider text-gray-400 mb-1 font-mono">
                 Verify Access Code (Confirm Password)
               </label>
               <input
                 type="password"
                 required
-                className="w-full px-3 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-green-500 font-mono text-sm"
+                className="w-full px-3 py-2 bg-black border border-gray-700 rounded text-white focus:outline-none focus:border-green-500 font-mono text-base"
                 placeholder="••••••••"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -249,7 +249,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 px-4 bg-green-700 hover:bg-green-600 active:bg-green-800 disabled:opacity-50 text-white font-bold rounded transition-colors tracking-wide font-mono uppercase text-sm"
+            className="w-full py-2.5 px-4 bg-green-700 hover:bg-green-600 active:bg-green-800 disabled:opacity-50 text-white font-bold rounded transition-colors tracking-wide font-mono uppercase text-base"
           >
             {loading ? 'Authenticating...' : isRegister ? 'Establish Profile' : 'Verify ID'}
           </button>
@@ -260,7 +260,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-gray-800"></div>
           </div>
-          <div className="relative flex justify-center text-xs uppercase">
+          <div className="relative flex justify-center text-sm uppercase">
             <span className="px-2 bg-gray-900 text-gray-400 font-mono">Or continue with</span>
           </div>
         </div>
@@ -269,7 +269,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         <button
           onClick={handleGoogleAuth}
           disabled={loading}
-          className="w-full py-2 px-4 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white rounded transition-colors flex items-center justify-center gap-2 font-mono text-sm"
+          className="w-full py-2.5 px-4 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white rounded transition-colors flex items-center justify-center gap-2 font-mono text-base"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -281,7 +281,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         </button>
 
         {/* Toggle mode links */}
-        <div className="mt-6 text-center text-xs">
+        <div className="mt-6 text-center text-sm">
           <span className="text-gray-400 font-mono">
             {isRegister ? 'Already registered?' : 'Need credentials?'}
           </span>{' '}

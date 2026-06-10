@@ -111,10 +111,10 @@ export default function AdminClient() {
       <div className="min-h-screen bg-gray-950 text-red-500 font-mono flex items-center justify-center p-8">
         <div className="max-w-md p-6 bg-red-950/20 border border-red-800 rounded-lg text-center shadow-lg">
           <h1 className="text-2xl font-bold uppercase tracking-wider mb-4">[ACCESS_DENIED]</h1>
-          <p className="text-sm text-gray-300 mb-6">
+          <p className="text-base text-gray-300 mb-6">
             Intrusion detected. This terminal is strictly reserved for authorized administrators. Your access attempt has been logged.
           </p>
-          <a href="/" className="inline-block px-4 py-2 bg-red-900/60 hover:bg-red-800 text-white rounded transition-colors text-sm border border-red-700">
+          <a href="/" className="inline-block px-4 py-2 bg-red-900/60 hover:bg-red-800 text-white rounded transition-colors text-base border border-red-700">
             Return to Core Terminal
           </a>
         </div>
@@ -232,13 +232,13 @@ export default function AdminClient() {
             <h1 className="text-3xl font-bold tracking-widest text-green-400 flex items-center gap-2">
               <span className="animate-pulse">●</span> ADMIN_CONTROL_CENTER
             </h1>
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-sm text-gray-400 mt-1">
               Secure operational interface for managing intelligence agents and active operations.
             </p>
           </div>
           <button 
             onClick={activeTab === 'agents' ? fetchUsers : fetchCTFs} 
-            className="px-4 py-2 bg-gray-900 border border-green-500/30 hover:border-green-400 text-green-400 hover:text-green-300 font-bold rounded text-xs transition-colors flex items-center gap-2"
+            className="px-4 py-2 bg-gray-900 border border-green-500/30 hover:border-green-400 text-green-400 hover:text-green-300 font-bold rounded text-sm transition-colors flex items-center gap-2"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89M9 11l3 3L22 4" />
@@ -251,13 +251,13 @@ export default function AdminClient() {
         <div className="flex gap-2 mb-6 border-b border-gray-800 pb-px">
           <button
             onClick={() => { setActiveTab('agents'); setSysMessage(null); }}
-            className={`px-6 py-2.5 font-bold text-sm tracking-wider transition-colors border-b-2 ${activeTab === 'agents' ? 'border-green-500 text-green-400' : 'border-transparent text-gray-400 hover:text-white'}`}
+            className={`px-6 py-2.5 font-bold text-base tracking-wider transition-colors border-b-2 ${activeTab === 'agents' ? 'border-green-500 text-green-400' : 'border-transparent text-gray-400 hover:text-white'}`}
           >
             [1.0] AGENT_MANAGEMENT
           </button>
           <button
             onClick={() => { setActiveTab('operations'); setSysMessage(null); }}
-            className={`px-6 py-2.5 font-bold text-sm tracking-wider transition-colors border-b-2 ${activeTab === 'operations' ? 'border-green-500 text-green-400' : 'border-transparent text-gray-400 hover:text-white'}`}
+            className={`px-6 py-2.5 font-bold text-base tracking-wider transition-colors border-b-2 ${activeTab === 'operations' ? 'border-green-500 text-green-400' : 'border-transparent text-gray-400 hover:text-white'}`}
           >
             [2.0] OPERATION_MANAGEMENT (CTFs)
           </button>
@@ -265,7 +265,7 @@ export default function AdminClient() {
 
         {/* System Message Banner */}
         {sysMessage && (
-          <div className={`p-4 mb-6 border rounded text-sm ${sysMessage.isError ? 'bg-red-950/20 border-red-800 text-red-400' : 'bg-green-950/20 border-green-800 text-green-400'}`}>
+          <div className={`p-4 mb-6 border rounded text-base ${sysMessage.isError ? 'bg-red-950/20 border-red-800 text-red-400' : 'bg-green-950/20 border-green-800 text-green-400'}`}>
             <strong>{sysMessage.isError ? '[ALERT_ERROR]:' : '[OPERATION_SUCCESSFUL]:'}</strong> {sysMessage.text}
           </div>
         )}
@@ -281,7 +281,7 @@ export default function AdminClient() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-gray-950 border-b border-gray-800 text-green-400 text-xs uppercase tracking-wider">
+                  <tr className="bg-gray-950 border-b border-gray-800 text-green-400 text-sm uppercase tracking-wider">
                     <th className="py-4 px-6 font-bold">Agent Alias / Email</th>
                     <th className="py-4 px-6 font-bold">Access Role</th>
                     <th className="py-4 px-6 font-bold text-center">Score</th>
@@ -289,7 +289,7 @@ export default function AdminClient() {
                     <th className="py-4 px-6 font-bold text-right">Operational Commands</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-800/60 text-sm">
+                <tbody className="divide-y divide-gray-800/60 text-base">
                   {usersList.map((managedUser) => (
                     <tr 
                       key={managedUser.uid} 
@@ -297,17 +297,17 @@ export default function AdminClient() {
                     >
                       <td className="py-4 px-6">
                         <div className="font-bold text-white tracking-wide">{managedUser.displayName}</div>
-                        <div className="text-xs text-gray-500 font-mono mt-0.5">{managedUser.email}</div>
+                        <div className="text-sm text-gray-500 font-mono mt-0.5">{managedUser.email}</div>
                       </td>
                       <td className="py-4 px-6">
-                        <span className={`px-2.5 py-1 rounded text-xs uppercase font-bold tracking-wider ${managedUser.role === 'admin' ? 'bg-red-900/30 text-red-400 border border-red-800' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>
+                        <span className={`px-2.5 py-1 rounded text-sm uppercase font-bold tracking-wider ${managedUser.role === 'admin' ? 'bg-red-900/30 text-red-400 border border-red-800' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>
                           {managedUser.role}
                         </span>
                       </td>
                       <td className="py-4 px-6 text-center text-blue-400 font-bold font-mono">
                         {managedUser.global_score !== undefined ? managedUser.global_score : managedUser.totalPoints} PTS
                       </td>
-                      <td className="py-4 px-6 text-xs text-gray-400">
+                      <td className="py-4 px-6 text-sm text-gray-400">
                         {managedUser.createdAt ? new Date(managedUser.createdAt).toLocaleDateString() : 'N/A'}
                       </td>
                       <td className="py-4 px-6 text-right">
@@ -315,21 +315,21 @@ export default function AdminClient() {
                           <button
                             onClick={() => handleToggleAdmin(managedUser.uid, managedUser.displayName, managedUser.role)}
                             disabled={actionLoading !== null || managedUser.uid === user.uid}
-                            className="px-2.5 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-gray-600 rounded text-xs font-bold transition-colors disabled:opacity-30"
+                            className="px-2.5 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-gray-600 rounded text-sm font-bold transition-colors disabled:opacity-30"
                           >
                             {managedUser.role === 'admin' ? 'Revoke Admin' : 'Grant Admin'}
                           </button>
                           <button
                             onClick={() => handleResetScore(managedUser.uid, managedUser.displayName)}
                             disabled={actionLoading !== null}
-                            className="px-2.5 py-1.5 bg-yellow-950/20 hover:bg-yellow-950/40 border border-yellow-900/60 hover:border-yellow-700 rounded text-xs font-bold text-yellow-500 transition-colors disabled:opacity-30"
+                            className="px-2.5 py-1.5 bg-yellow-950/20 hover:bg-yellow-950/40 border border-yellow-900/60 hover:border-yellow-700 rounded text-sm font-bold text-yellow-500 transition-colors disabled:opacity-30"
                           >
                             Reset Score
                           </button>
                           <button
                             onClick={() => handleDeleteUser(managedUser.uid, managedUser.displayName)}
                             disabled={actionLoading !== null || managedUser.uid === user.uid}
-                            className="px-2.5 py-1.5 bg-red-950/20 hover:bg-red-950/40 border border-red-900/60 hover:border-red-700 rounded text-xs font-bold text-red-500 transition-colors disabled:opacity-30"
+                            className="px-2.5 py-1.5 bg-red-950/20 hover:bg-red-950/40 border border-red-900/60 hover:border-red-700 rounded text-sm font-bold text-red-500 transition-colors disabled:opacity-30"
                           >
                             Delete
                           </button>
@@ -352,7 +352,7 @@ export default function AdminClient() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-gray-950 border-b border-gray-800 text-green-400 text-xs uppercase tracking-wider">
+                  <tr className="bg-gray-950 border-b border-gray-800 text-green-400 text-sm uppercase tracking-wider">
                     <th className="py-4 px-6 font-bold">Operation Title</th>
                     <th className="py-4 px-6 font-bold">Creator UID</th>
                     <th className="py-4 px-6 font-bold">Operation ID</th>
@@ -360,7 +360,7 @@ export default function AdminClient() {
                     <th className="py-4 px-6 font-bold text-right">Operational Commands</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-800/60 text-sm">
+                <tbody className="divide-y divide-gray-800/60 text-base">
                   {ctfsList.map((ctf) => (
                     <tr 
                       key={ctf.id} 
@@ -369,20 +369,20 @@ export default function AdminClient() {
                       <td className="py-4 px-6 font-bold text-white tracking-wide">
                         {ctf.title}
                       </td>
-                      <td className="py-4 px-6 text-xs text-gray-500 font-mono">
+                      <td className="py-4 px-6 text-sm text-gray-500 font-mono">
                         {ctf.creator_uid}
                       </td>
-                      <td className="py-4 px-6 text-xs text-gray-400 font-mono">
+                      <td className="py-4 px-6 text-sm text-gray-400 font-mono">
                         {ctf.id}
                       </td>
-                      <td className="py-4 px-6 text-xs text-gray-400">
+                      <td className="py-4 px-6 text-sm text-gray-400">
                         {ctf.created_at ? new Date(ctf.created_at).toLocaleDateString() : 'N/A'}
                       </td>
                       <td className="py-4 px-6 text-right">
                         <button
                           onClick={() => handleDeleteCTF(ctf.id, ctf.title)}
                           disabled={actionLoading !== null}
-                          className="px-2.5 py-1.5 bg-red-950/20 hover:bg-red-950/40 border border-red-900/60 hover:border-red-700 rounded text-xs font-bold text-red-500 transition-colors disabled:opacity-30 flex items-center gap-1.5 ml-auto"
+                          className="px-2.5 py-1.5 bg-red-950/20 hover:bg-red-950/40 border border-red-900/60 hover:border-red-700 rounded text-sm font-bold text-red-500 transition-colors disabled:opacity-30 flex items-center gap-1.5 ml-auto"
                         >
                           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

@@ -47,13 +47,13 @@ export default function CreateCTFClient() {
       
       <form onSubmit={handleSubmit} className="bg-gray-900 p-6 rounded border border-cyan-900 shadow-2xl">
         <div className="mb-4">
-          <label className="block text-xs font-bold uppercase tracking-wider text-cyan-500 mb-2" htmlFor="title">
+          <label className="block text-sm font-bold uppercase tracking-wider text-cyan-500 mb-2" htmlFor="title">
             OPERATION TITLE
           </label>
           <input
             id="title"
             type="text"
-            className="w-full px-3 py-2 bg-black border border-cyan-900 rounded text-cyan-400 focus:outline-none focus:border-cyan-500 font-mono text-sm"
+            className="w-full px-3 py-2 bg-black border border-cyan-900 rounded text-cyan-400 focus:outline-none focus:border-cyan-500 font-mono text-base"
             placeholder="e.g. OPERATION_DARK_WEB"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -62,13 +62,13 @@ export default function CreateCTFClient() {
         </div>
 
         <div className="mb-6">
-          <label className="block text-xs font-bold uppercase tracking-wider text-cyan-500 mb-2" htmlFor="description">
+          <label className="block text-sm font-bold uppercase tracking-wider text-cyan-500 mb-2" htmlFor="description">
             MISSION BRIEFING (DESCRIPTION & LINKS)
           </label>
           <textarea
             id="description"
             rows={6}
-            className="w-full px-3 py-2 bg-black border border-cyan-900 rounded text-cyan-400 focus:outline-none focus:border-cyan-500 font-mono text-sm resize-none"
+            className="w-full px-3 py-2 bg-black border border-cyan-900 rounded text-cyan-400 focus:outline-none focus:border-cyan-500 font-mono text-base resize-none"
             placeholder="Provide operational briefing coordinates and initial evidence links..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -79,7 +79,7 @@ export default function CreateCTFClient() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full py-3 px-4 bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-700 hover:border-cyan-500 text-cyan-400 font-bold rounded transition-colors tracking-wide font-mono uppercase text-sm disabled:opacity-40"
+          className="w-full py-3 px-4 bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-700 hover:border-cyan-500 text-cyan-400 font-bold rounded transition-colors tracking-wide font-mono uppercase text-base disabled:opacity-40"
         >
           {isSubmitting ? 'DEPLOYING_OPERATION...' : 'INITIALIZE_CTF_DEPLOYMENT'}
         </button>
