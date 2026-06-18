@@ -89,3 +89,79 @@ export async function backfillRetroactiveCreatorPoints(idToken: string) {
     return { success: false, message: error.message || 'Server error occurred during data backfill.' };
   }
 }
+
+/**
+ * Toggles the pinned status of a review document.
+ * Only verified admins (either via Custom Claims role or Firestore users collection role) can call this.
+ */
+export async function toggleReviewPinStatus(idToken: string, reviewId: string, shouldPin: boolean) {
+  try {
+    // 1. Verify the caller's ID token
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    const uid = decodedToken.uid;
+
+    // 2. Check if custom claim role is strictly admin
+    let isAdmin = decodedToken.role === 'admin';
+
+    // 3. If not, check Firestore user document role
+    if (!isAdmin) {
+      const userDoc = await adminDb.collection('users').doc(uid).get();
+      if (userDoc.exists && userDoc.data()?.role === 'admin') {
+        isAdmin = true;
+      }
+    }
+
+    if (!isAdmin) {
+      throw new Error('Unauthorized: Admin role required.');
+    }
+
+    // 4. Update the target document in the /reviews collection by setting the field isPinned: shouldPin
+    await adminDb.collection('reviews').doc(reviewId).update({
+      isPinned: shouldPin
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error in toggleReviewPinStatus:", error);
+    throw error;
+  }
+}
+
+/**
+ * Toggles the pinned status of a writeup document.
+ * Only verified admins (either via Custom Claims role or Firestore users collection role) can call this.
+ */
+export async function toggleWriteupPinStatus(idToken: string, writeupId: string, shouldPin: boolean) {
+  try {
+    // 1. Verify the caller's ID token
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    const uid = decodedToken.uid;
+
+    // 2. Check if custom claim role is strictly admin
+    let isAdmin = decodedToken.role === 'admin';
+
+    // 3. If not, check Firestore user document role
+    if (!isAdmin) {
+      const userDoc = await adminDb.collection('users').doc(uid).get();
+      if (userDoc.exists && userDoc.data()?.role === 'admin') {
+        isAdmin = true;
+      }
+    }
+
+    if (!isAdmin) {
+      throw new Error('Unauthorized: Admin role required.');
+    }
+
+    // 4. Update the target document in the /writeups collection by setting the field isPinned: shouldPin
+    await adminDb.collection('writeups').doc(writeupId).update({
+      isPinned: shouldPin
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error in toggleWriteupPinStatus:", error);
+    throw error;
+  }
+}
+
+

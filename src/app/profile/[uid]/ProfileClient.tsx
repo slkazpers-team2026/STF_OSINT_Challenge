@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { getPublicProfileData } from '@/app/actions/profileActions';
 import Link from 'next/link';
+import { db } from '@/lib/firebase/client';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 interface ProfileData {
   profile: {
@@ -19,6 +21,8 @@ export default function ProfileClient({ uid }: { uid: string }) {
   const [data, setData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [certifications, setCertifications] = useState<{ programTitle: string; score: number }[]>([]);
+  const [loadingCerts, setLoadingCerts] = useState(true);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -38,6 +42,45 @@ export default function ProfileClient({ uid }: { uid: string }) {
     };
 
     fetchProfile();
+  }, [uid]);
+
+  useEffect(() => {
+    const fetchCerts = async () => {
+      try {
+        // 1. Fetch all programs to get title mappings
+        const programsSnap = await getDocs(collection(db, 'programs'));
+        const programsMap: { [id: string]: string } = {};
+        programsSnap.forEach(docSnap => {
+          programsMap[docSnap.id] = docSnap.data().title || 'Unknown Program';
+        });
+
+        // 2. Fetch user's completed course progress
+        const progressQuery = query(
+          collection(db, 'user_course_progress'),
+          where('userId', '==', uid),
+          where('finalExamAttempted', '==', true)
+        );
+        
+        const progressSnap = await getDocs(progressQuery);
+        const certList: { programTitle: string; score: number }[] = [];
+        progressSnap.forEach(docSnap => {
+          const data = docSnap.data();
+          const title = programsMap[data.programId] || 'Unknown Program';
+          certList.push({
+            programTitle: title,
+            score: data.finalExamScorePercent || 0
+          });
+        });
+        
+        setCertifications(certList);
+      } catch (err) {
+        console.error("Error loading certifications:", err);
+      } finally {
+        setLoadingCerts(false);
+      }
+    };
+
+    fetchCerts();
   }, [uid]);
 
   if (loading) {
@@ -384,6 +427,36 @@ export default function ProfileClient({ uid }: { uid: string }) {
           </div>
           <div className="absolute top-0 right-0 w-2 h-2 bg-pink-500/20"></div>
         </div>
+      </div>
+
+      {/* Certifications Section */}
+      <h2 className="text-base font-bold tracking-widest uppercase text-white mb-4 flex items-center gap-2 mt-8">
+        <span className="text-cyan-500">&gt;</span> [ACADEMY_CERTIFICATIONS // CLEARANCE_LEVEL]
+      </h2>
+      
+      <div className="bg-black/60 border border-cyan-950 p-6 rounded mb-8 relative">
+        {loadingCerts ? (
+          <p className="text-xs text-cyan-600 animate-pulse">{"// ACCESSING CLEARANCE ARCHIVES..."}</p>
+        ) : certifications.length > 0 ? (
+          <div className="space-y-4">
+            {certifications.map((cert, idx) => (
+              <div key={idx} className="space-y-1.5">
+                <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-cyan-400">
+                  <span>{cert.programTitle}</span>
+                  <span>{cert.score}% [CLEARED]</span>
+                </div>
+                <div className="h-2 w-full bg-cyan-950/40 rounded overflow-hidden border border-cyan-900/40 relative">
+                  <div 
+                    className="h-full bg-gradient-to-r from-green-600 to-green-400 shadow-[0_0_8px_rgba(74,222,128,0.5)] transition-all duration-500" 
+                    style={{ width: `${cert.score}%` }}
+                  ></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-cyan-600/60 italic">{"// NO REGISTERED CLEARANCE CODES ON RECORD. COMPLETE TRAINING ACADEMY FINAL EXAMS TO ESTABLISH CERTIFICATION."}</p>
+        )}
       </div>
 
       {/* Badges / Achievements Section */}

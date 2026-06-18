@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, getDocs, orderBy, query, doc, getDoc, addDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, orderBy, query, doc, getDoc, addDoc, serverTimestamp, onSnapshot, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import CTFCard from '@/components/CTFCard';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { toggleReviewPinStatus } from '@/app/actions/adminActions';
 
 interface CTF {
   id: string;
@@ -25,20 +27,30 @@ interface Review {
   comment: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   createdAt: any;
+  isPinned?: boolean;
 }
 
-export default function HomeClient() {
+export default function HomeClient({ 
+  initialReviews, 
+  challengeCounts = {} 
+}: { 
+  initialReviews?: Review[];
+  challengeCounts?: { [ctfId: string]: number };
+}) {
   const [ctfs, setCtfs] = useState<CTF[]>([]);
   const [loading, setLoading] = useState(true);
   const { user, userData } = useAuth();
   
   // Reviews state
-  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviews, setReviews] = useState<Review[]>(initialReviews || []);
+  const [submissions, setSubmissions] = useState<{ [ctfId: string]: string[] }>({});
   const [newComment, setNewComment] = useState('');
   const [newStars, setNewStars] = useState(5);
   const [hoverStars, setHoverStars] = useState<number | null>(null);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [reviewError, setReviewError] = useState('');
+  const [pinningIds, setPinningIds] = useState<{ [id: string]: boolean }>({});
+  const router = useRouter();
 
   // SITREP headlines state
   const [headlines, setHeadlines] = useState<string[]>([]);
@@ -135,9 +147,38 @@ export default function HomeClient() {
         id: doc.id,
         ...doc.data()
       })) as Review[];
-      setReviews(list);
+      
+      const sortedList = list.sort((a, b) => {
+        const aPinned = a.isPinned === true ? 1 : 0;
+        const bPinned = b.isPinned === true ? 1 : 0;
+        return bPinned - aPinned;
+      });
+      
+      setReviews(sortedList);
     }, (err) => {
       console.error("Error fetching reviews:", err);
+    });
+    return () => unsubscribe();
+  }, [user]);
+
+  // Real-time Submissions subscription
+  useEffect(() => {
+    if (!user) {
+      setSubmissions({});
+      return;
+    }
+    const q = query(collection(db, 'submissions'), where('user_id', '==', user.uid));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const subMap: { [ctfId: string]: string[] } = {};
+      snapshot.docs.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.ctf_id) {
+          subMap[data.ctf_id] = data.completed_challenges || [];
+        }
+      });
+      setSubmissions(subMap);
+    }, (err) => {
+      console.error("Error listening to user submissions:", err);
     });
     return () => unsubscribe();
   }, [user]);
@@ -158,7 +199,8 @@ export default function HomeClient() {
         displayName: userData?.displayName || user.displayName || user.email || 'Unknown Officer',
         stars: newStars,
         comment: newComment.trim(),
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
+        isPinned: false
       });
       setNewComment('');
       setNewStars(5);
@@ -167,6 +209,21 @@ export default function HomeClient() {
       setReviewError('Failed to submit feedback.');
     } finally {
       setSubmittingReview(false);
+    }
+  };
+
+  const handleTogglePin = async (reviewId: string, currentPinStatus: boolean) => {
+    if (!user) return;
+    setPinningIds(prev => ({ ...prev, [reviewId]: true }));
+    try {
+      const idToken = await user.getIdToken();
+      await toggleReviewPinStatus(idToken, reviewId, !currentPinStatus);
+      router.refresh();
+    } catch (err) {
+      console.error("Error toggling pin status:", err);
+      alert("Failed to toggle pin status. Are you authorized?");
+    } finally {
+      setPinningIds(prev => ({ ...prev, [reviewId]: false }));
     }
   };
 
@@ -236,6 +293,8 @@ export default function HomeClient() {
               creator_uid={ctf.creator_uid}
               isPublished={ctf.isPublished}
               currentUserUid={user?.uid}
+              totalChallenges={challengeCounts[ctf.id] || 0}
+              completedCount={submissions[ctf.id]?.length || 0}
             />
           ))}
         </div>
@@ -316,11 +375,37 @@ export default function HomeClient() {
               <p className="text-gray-500 italic text-base">[NO_FEEDBACK_LOGS_ON_RECORD]</p>
             ) : (
               reviews.map((rev) => (
-                <div key={rev.id} className="bg-black/40 border border-gray-950 p-4 rounded relative hover:border-gray-800 transition-all duration-300">
+                <div 
+                  key={rev.id} 
+                  className={`bg-black/40 border p-4 rounded relative hover:border-gray-800 transition-all duration-300 ${
+                    rev.isPinned 
+                      ? 'border-green-500/60 shadow-[0_0_12px_rgba(34,197,94,0.25)]' 
+                      : 'border-gray-950'
+                  }`}
+                >
+                  {rev.isPinned && (
+                    <span className="absolute top-1 right-2 text-[10px] font-mono text-green-400 select-none tracking-wider">
+                      [📌 PINNED_BY_ADMIN]
+                    </span>
+                  )}
                   <div className="flex justify-between items-start mb-2">
-                    <div className="font-bold text-base text-green-400 flex items-center gap-2">
+                    <div className="font-bold text-base text-green-400 flex items-center gap-2 flex-wrap">
                       <span>{rev.displayName}</span>
                       <span className="text-sm text-gray-600 font-normal">UID: {rev.uid.substring(0, 6)}...</span>
+                      {userData?.role === 'admin' && (
+                        <button
+                          type="button"
+                          onClick={() => handleTogglePin(rev.id, !!rev.isPinned)}
+                          disabled={pinningIds[rev.id]}
+                          className="text-xs font-mono text-cyan-400 hover:text-cyan-300 disabled:opacity-50 focus:outline-none transition-colors border border-cyan-800/40 bg-cyan-950/20 px-1 py-0.5 rounded"
+                        >
+                          {pinningIds[rev.id] 
+                            ? '[⚙️ PROCESSING...]' 
+                            : rev.isPinned 
+                              ? '[📍 UNPIN]' 
+                              : '[📌 PIN]'}
+                        </button>
+                      )}
                     </div>
                     <div className="text-yellow-400 text-base">
                       {'★'.repeat(rev.stars)}{'☆'.repeat(5 - rev.stars)}

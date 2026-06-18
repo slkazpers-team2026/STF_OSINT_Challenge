@@ -18,6 +18,7 @@ import {
 } from '@/app/actions/ctfActions';
 import AddChallengeModal from '@/components/AddChallengeModal';
 import { useRouter } from 'next/navigation';
+import { toggleWriteupPinStatus } from '@/app/actions/adminActions';
 
 // Type definitions
 interface Challenge {
@@ -65,6 +66,7 @@ export default function CTFDetailPage({ params }: { params: { id: string } }) {
   const [methodologyInput, setMethodologyInput] = useState('');
   const [writeupMessage, setWriteupMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const [submittingWriteup, setSubmittingWriteup] = useState(false);
+  const [writeupPinningIds, setWriteupPinningIds] = useState<{ [id: string]: boolean }>({});
 
   // Challenges list query re-extracted for fetch triggers
   const fetchChallenges = useCallback(async () => {
@@ -409,13 +411,19 @@ export default function CTFDetailPage({ params }: { params: { id: string } }) {
         id: doc.id,
         ...doc.data()
       }));
-      // Sort client-side by createdAt to avoid composite index requirements
-      list.sort((a: any, b: any) => {
+      
+      const sortedWriteups = list.sort((a: any, b: any) => {
+        const aPinned = a.isPinned === true ? 1 : 0;
+        const bPinned = b.isPinned === true ? 1 : 0;
+        if (aPinned !== bPinned) {
+          return bPinned - aPinned;
+        }
         const timeA = a.createdAt?.seconds || 0;
         const timeB = b.createdAt?.seconds || 0;
         return timeB - timeA;
       });
-      setWriteups(list);
+
+      setWriteups(sortedWriteups);
     }, (error) => {
       console.error("Error subscribing to writeups:", error);
     });
@@ -439,11 +447,26 @@ export default function CTFDetailPage({ params }: { params: { id: string } }) {
       } else {
         setWriteupMessage({ text: res.message, isError: true });
       }
-    } catch (err) {
-      console.error("Error submitting writeup:", err);
-      setWriteupMessage({ text: 'An error occurred while logging methodology.', isError: true });
+    } catch (error) {
+      console.error("Error submitting writeup:", error);
+      setWriteupMessage({ text: 'An unexpected error occurred during submission.', isError: true });
     } finally {
       setSubmittingWriteup(false);
+    }
+  };
+
+  const handleToggleWriteupPin = async (writeupId: string, currentPinStatus: boolean) => {
+    if (!user) return;
+    setWriteupPinningIds(prev => ({ ...prev, [writeupId]: true }));
+    try {
+      const idToken = await user.getIdToken();
+      await toggleWriteupPinStatus(idToken, writeupId, !currentPinStatus);
+      router.refresh();
+    } catch (err) {
+      console.error("Error toggling writeup pin status:", err);
+      alert("Failed to toggle writeup pin status. Are you authorized?");
+    } finally {
+      setWriteupPinningIds(prev => ({ ...prev, [writeupId]: false }));
     }
   };
 
@@ -785,10 +808,37 @@ export default function CTFDetailPage({ params }: { params: { id: string } }) {
                   ) : (
                     <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                       {writeups.map((w) => (
-                        <div key={w.id} className="bg-gray-900/40 border border-gray-800/80 p-5 rounded relative hover:border-cyan-950/60 transition-all duration-300">
+                        <div 
+                          key={w.id} 
+                          className={`bg-gray-900/40 border p-5 rounded relative hover:border-cyan-950/60 transition-all duration-300 ${
+                            w.isPinned 
+                              ? 'border-amber-500/60 shadow-[0_0_12px_rgba(245,158,11,0.25)]' 
+                              : 'border-gray-800/80'
+                          }`}
+                        >
+                          {w.isPinned && (
+                            <span className="absolute top-1 right-2 text-[10px] font-mono text-amber-400 select-none tracking-wider animate-pulse">
+                              [📌 INTEL_PINNED_BY_ADMIN]
+                            </span>
+                          )}
                           <div className="flex justify-between items-start mb-3 border-b border-gray-800/40 pb-2">
-                            <div className="text-base font-bold text-cyan-400">
-                              {w.displayName} <span className="text-sm text-cyan-600 font-normal">[AGENT]</span>
+                            <div className="text-base font-bold text-cyan-400 flex items-center gap-2 flex-wrap">
+                              <span>{w.displayName}</span>
+                              <span className="text-sm text-cyan-600 font-normal">[AGENT]</span>
+                              {userData?.role === 'admin' && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleWriteupPin(w.id, !!w.isPinned)}
+                                  disabled={writeupPinningIds[w.id]}
+                                  className="text-xs font-mono text-cyan-400 hover:text-cyan-300 disabled:opacity-50 focus:outline-none transition-colors border border-cyan-800/40 bg-cyan-950/20 px-1 py-0.5 rounded"
+                                >
+                                  {writeupPinningIds[w.id] 
+                                    ? '[⚙️ PROCESSING...]' 
+                                    : w.isPinned 
+                                      ? '[📍 UNPIN REPORT]' 
+                                      : '[📌 PIN REPORT]'}
+                                </button>
+                              )}
                             </div>
                             <div className="text-sm text-gray-500">
                               {w.createdAt?.seconds 

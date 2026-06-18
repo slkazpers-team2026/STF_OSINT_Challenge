@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, updateProfile } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '@/lib/firebase/client';
 import { syncNewUser } from '@/app/actions/authActions';
 
@@ -18,6 +18,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   // Modal State Reset on Open/Close transitions
   useEffect(() => {
@@ -28,6 +29,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       setPassword('');
       setConfirmPassword('');
       setError('');
+      setSuccess(false);
     }
   }, [isOpen]);
 
@@ -49,6 +51,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess(false);
     setLoading(true);
 
     // Form validations for registration
@@ -110,6 +113,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
   const handleGoogleAuth = async () => {
     setError('');
+    setSuccess(false);
     setLoading(true);
     const provider = new GoogleAuthProvider();
     try {
@@ -144,6 +148,32 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     setPassword('');
     setConfirmPassword('');
     setError('');
+    setSuccess(false);
+  };
+
+  const handleForgotPassword = async () => {
+    setError('');
+    setSuccess(false);
+    if (!email) {
+      setError('Agent email is required to dispatch reset vector.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setSuccess(true);
+    } catch (err: any) {
+      console.error("Forgot password error:", err);
+      let msg = err.message || 'An error occurred during password reset.';
+      if (err.code === 'auth/user-not-found') {
+        msg = 'No agent found with this email.';
+      } else if (err.code === 'auth/invalid-email') {
+        msg = 'Invalid email address format.';
+      }
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -179,6 +209,13 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         {error && (
           <div className="p-3 mb-4 text-sm text-red-400 bg-red-950/40 border border-red-800 rounded font-mono">
             <strong>[SYS_ERR]:</strong> {error}
+          </div>
+        )}
+
+        {/* Success display */}
+        {success && (
+          <div className="p-3 mb-4 text-sm text-green-400 bg-green-950/40 border border-green-800 rounded font-mono">
+            <strong>[SYS_INF]:</strong> Cryptographic reset token transmitted to registered secure email.
           </div>
         )}
 
@@ -227,6 +264,17 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            {!isRegister && (
+              <div className="mt-1.5 text-right">
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  className="text-xs text-red-400/80 hover:text-red-300 font-mono transition-colors uppercase tracking-wider bg-transparent border-none cursor-pointer focus:outline-none"
+                >
+                  Forgot Access Code? // [RESET]
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Confirm Password Field (Conditional Rendering for Registration) */}

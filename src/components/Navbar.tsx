@@ -31,6 +31,11 @@ export default function Navbar() {
               Global Leaderboard
             </Link>
             {user && (
+              <Link href="/lessons" className="text-gray-300 hover:text-white transition-colors text-base font-medium">
+                Lessons
+              </Link>
+            )}
+            {user && (
               <Link href={`/profile/${user.uid}`} className="text-gray-300 hover:text-white transition-colors text-base font-medium">
                 My Profile
               </Link>

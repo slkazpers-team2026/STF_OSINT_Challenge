@@ -553,7 +553,8 @@ export async function submitWriteup(
       userId,
       displayName,
       methodology: methodology.trim(),
-      createdAt: adminFirestore.FieldValue.serverTimestamp()
+      createdAt: adminFirestore.FieldValue.serverTimestamp(),
+      isPinned: false
     });
 
     return { success: true, message: 'Debriefing methodology successfully logged to registry.' };

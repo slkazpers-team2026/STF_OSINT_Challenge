@@ -63,5 +63,18 @@ service cloud.firestore {
     match /writeups/{writeupId} {
       allow read, create: if isAuth();
     }
+
+    // 7. Programs Collection
+    match /programs/{programId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
+    // 8. User Course Progress Collection
+    match /user_course_progress/{progressId} {
+      allow read: if isAuth() && (resource == null || resource.data.userId == request.auth.uid);
+      allow create, update: if isAuth() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAdmin();
+    }
   }
 }
