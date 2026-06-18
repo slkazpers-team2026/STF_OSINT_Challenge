@@ -8,6 +8,7 @@ import {
   doc, 
   setDoc, 
   addDoc, 
+  updateDoc,
   serverTimestamp, 
   query, 
   orderBy, 
@@ -15,6 +16,7 @@ import {
   where 
 } from 'firebase/firestore';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface QuizQuestion {
   text: string;
@@ -56,6 +58,8 @@ interface UserProgress {
 
 export default function LessonsPage() {
   const { user, userData, loading: authLoading } = useAuth();
+  const currentUser = userData;
+  const router = useRouter();
   const [programs, setPrograms] = useState<Program[]>([]);
   const [progress, setProgress] = useState<{ [programId: string]: UserProgress }>({});
   const [loadingPrograms, setLoadingPrograms] = useState(true);
@@ -76,6 +80,7 @@ export default function LessonsPage() {
 
   // Admin Injection Form State
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [editingProgramId, setEditingProgramId] = useState<string | null>(null);
   const [adminTitle, setAdminTitle] = useState('');
   const [adminDescription, setAdminDescription] = useState('');
   const [adminModules, setAdminModules] = useState<Module[]>([
@@ -101,6 +106,88 @@ export default function LessonsPage() {
   const [adminError, setAdminError] = useState('');
   const [adminSubmitting, setAdminSubmitting] = useState(false);
   const [adminIsPublished, setAdminIsPublished] = useState(false);
+
+  const handleOpenCreateModal = () => {
+    setEditingProgramId(null);
+    setAdminTitle('');
+    setAdminDescription('');
+    setAdminIsPublished(false);
+    setAdminModules([
+      {
+        moduleId: 1,
+        moduleTitle: '',
+        subLessons: [
+          {
+            subTitle: '',
+            fbVideoUrl: '',
+            quizQuestions: [
+              {
+                text: '',
+                options: ['', '', '', ''],
+                correctOptionIndex: 0,
+                scoreValue: 5
+              }
+            ]
+          }
+        ]
+      }
+    ]);
+    setIsAdminModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsAdminModalOpen(false);
+    setEditingProgramId(null);
+    setAdminTitle('');
+    setAdminDescription('');
+    setAdminIsPublished(false);
+    setAdminModules([
+      {
+        moduleId: 1,
+        moduleTitle: '',
+        subLessons: [
+          {
+            subTitle: '',
+            fbVideoUrl: '',
+            quizQuestions: [
+              {
+                text: '',
+                options: ['', '', '', ''],
+                correctOptionIndex: 0,
+                scoreValue: 5
+              }
+            ]
+          }
+        ]
+      }
+    ]);
+  };
+
+  const handleEditProgram = (prog: Program) => {
+    setEditingProgramId(prog.id);
+    setAdminTitle(prog.title);
+    setAdminDescription(prog.description);
+    setAdminIsPublished(prog.isPublished ?? false);
+    
+    // Deep map modules -> subLessons -> quizQuestions
+    const mappedModules = (prog.modules || []).map((mod) => ({
+      moduleId: mod.moduleId,
+      moduleTitle: mod.moduleTitle || '',
+      subLessons: (mod.subLessons || []).map((sub) => ({
+        subTitle: sub.subTitle || '',
+        fbVideoUrl: sub.fbVideoUrl || '',
+        quizQuestions: (sub.quizQuestions || []).map((q) => ({
+          text: q.text || '',
+          options: Array.isArray(q.options) ? [...q.options] : ['', '', '', ''],
+          correctOptionIndex: typeof q.correctOptionIndex === 'number' ? q.correctOptionIndex : 0,
+          scoreValue: typeof q.scoreValue === 'number' ? q.scoreValue : 5
+        }))
+      }))
+    }));
+
+    setAdminModules(mappedModules);
+    setIsAdminModalOpen(true);
+  };
 
   // Fetch programs dynamically
   useEffect(() => {
@@ -438,14 +525,26 @@ export default function LessonsPage() {
 
     setAdminSubmitting(true);
     try {
-      await addDoc(collection(db, 'programs'), {
-        title: adminTitle.trim(),
-        description: adminDescription.trim(),
-        createdBy: user?.uid || 'system',
-        createdAt: serverTimestamp(),
-        modules: adminModules,
-        isPublished: adminIsPublished
-      });
+      if (editingProgramId) {
+        const programDocRef = doc(db, 'programs', editingProgramId);
+        await updateDoc(programDocRef, {
+          title: adminTitle.trim(),
+          description: adminDescription.trim(),
+          modules: adminModules,
+          isPublished: adminIsPublished
+        });
+        console.log('[SYS_INF]: Program data successfully overridden.');
+        alert('[SYS_INF]: Program data successfully overridden.');
+      } else {
+        await addDoc(collection(db, 'programs'), {
+          title: adminTitle.trim(),
+          description: adminDescription.trim(),
+          createdBy: user?.uid || 'system',
+          createdAt: serverTimestamp(),
+          modules: adminModules,
+          isPublished: adminIsPublished
+        });
+      }
 
       // Clear Form and Close Modal
       setAdminTitle('');
@@ -471,10 +570,11 @@ export default function LessonsPage() {
           ]
         }
       ]);
+      setEditingProgramId(null);
       setIsAdminModalOpen(false);
     } catch (err: any) {
       console.error(err);
-      setAdminError(err.message || 'Failed to inject training program.');
+      setAdminError(err.message || 'Failed to save training program.');
     } finally {
       setAdminSubmitting(false);
     }
@@ -537,9 +637,9 @@ export default function LessonsPage() {
           </div>
           
           {/* Admin Injection Toggle */}
-          {userData?.role === 'admin' && (
+          {currentUser?.role === 'admin' && (
             <button
-              onClick={() => setIsAdminModalOpen(true)}
+              onClick={handleOpenCreateModal}
               className="px-5 py-2.5 bg-green-950/40 hover:bg-green-900/60 border border-green-700 hover:border-green-400 text-green-400 font-bold rounded tracking-wide transition-all duration-300 shadow-[0_0_10px_rgba(34,197,94,0.2)] hover:shadow-[0_0_15px_rgba(34,197,94,0.4)] flex items-center gap-2"
             >
               <span>+ INJECT NEW TRAINING PROGRAM // [NEW_LESSON]</span>
@@ -817,9 +917,9 @@ export default function LessonsPage() {
               const totalModules = prog.modules.length;
 
               return (
-                <Link
+                <div
                   key={prog.id}
-                  href={`/lessons/${prog.id}`}
+                  onClick={() => router.push(`/lessons/${prog.id}`)}
                   className="bg-gray-900/60 border border-cyan-800/60 hover:border-cyan-500 rounded-lg p-5 transition-all duration-300 shadow-[0_0_15px_rgba(6,182,212,0.03)] hover:shadow-[0_0_20px_rgba(6,182,212,0.15)] flex flex-col justify-between cursor-pointer group"
                 >
                   <div>
@@ -850,15 +950,32 @@ export default function LessonsPage() {
                     </p>
                   </div>
 
-                  <div className="border-t border-cyan-950/40 pt-3 mt-4 flex justify-between items-center text-[10px] font-bold tracking-wider text-cyan-600">
-                    <div>
-                      MODULES: {completedCount}/{totalModules} COMPLETED
+                  <div>
+                    <div className="border-t border-cyan-950/40 pt-3 mt-4 flex justify-between items-center text-[10px] font-bold tracking-wider text-cyan-600">
+                      <div>
+                        MODULES: {completedCount}/{totalModules} COMPLETED
+                      </div>
+                      <div>
+                        {prog.createdAt ? new Date(prog.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}
+                      </div>
                     </div>
-                    <div>
-                      {prog.createdAt ? new Date(prog.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}
-                    </div>
+
+                    {currentUser?.role === 'admin' && (
+                      <div className="mt-4 pt-3 border-t border-cyan-950/40 flex justify-end">
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleEditProgram(prog);
+                          }}
+                          className="px-3 py-1.5 bg-cyan-950/60 hover:bg-cyan-900 border border-cyan-800 hover:border-cyan-400 text-cyan-400 font-bold rounded text-xs uppercase tracking-wider transition-all duration-300 font-mono shadow-[0_0_10px_rgba(6,182,212,0.15)] hover:shadow-[0_0_15px_rgba(6,182,212,0.3)] z-10"
+                        >
+                          [✏️ EDIT_PROGRAM]
+                        </button>
+                      </div>
+                    )}
                   </div>
-                </Link>
+                </div>
               );
             })}
 
@@ -875,7 +992,7 @@ export default function LessonsPage() {
       {/* --- Admin Program Injection Modal --- */}
       {isAdminModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
-          <div className="absolute inset-0" onClick={() => !adminSubmitting && setIsAdminModalOpen(false)}></div>
+          <div className="absolute inset-0" onClick={() => !adminSubmitting && handleCloseModal()}></div>
           
           <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 bg-gray-900 border border-green-500 rounded-lg shadow-2xl z-10 font-mono text-white">
             
@@ -883,13 +1000,16 @@ export default function LessonsPage() {
             <div className="mb-6 border-b border-green-900 pb-3 flex justify-between items-center">
               <div>
                 <h2 className="text-xl font-bold tracking-widest text-green-400 uppercase">
-                  &gt; INJECT_ACADEMY_PROGRAM
+                  {editingProgramId ? '> OVERRIDE_ACADEMY_PROGRAM' : '> INJECT_ACADEMY_PROGRAM'}
                 </h2>
-                <p className="text-sm text-green-700 mt-0.5">Deploy new training courses to database collection.</p>
+                <p className="text-sm text-green-700 mt-0.5">
+                  {editingProgramId ? 'Modify existing training courses in database collection.' : 'Deploy new training courses to database collection.'}
+                </p>
               </div>
               <button
+                type="button"
                 disabled={adminSubmitting}
-                onClick={() => setIsAdminModalOpen(false)}
+                onClick={handleCloseModal}
                 className="text-gray-500 hover:text-green-400 transition-colors uppercase text-sm font-bold"
               >
                 [Cancel]
@@ -1166,7 +1286,9 @@ export default function LessonsPage() {
                 disabled={adminSubmitting}
                 className="w-full py-3 bg-green-950/40 hover:bg-green-900/60 border border-green-800 hover:border-green-500 text-green-400 font-bold rounded tracking-widest font-mono uppercase text-lg transition-colors"
               >
-                {adminSubmitting ? 'SAVING COURSEWARE...' : 'INJECT TRAINING PROGRAM TO DATABASE'}
+                {adminSubmitting 
+                  ? 'SAVING COURSEWARE...' 
+                  : (editingProgramId ? 'OVERRIDE TRAINING PROGRAM IN DATABASE' : 'INJECT TRAINING PROGRAM TO DATABASE')}
               </button>
 
             </form>
